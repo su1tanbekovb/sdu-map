@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDU Map – campus navigator</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+<aside>
+ <div class="brand"><div class="logo">SDU</div><div><h1>SDU Map</h1><small>Suleyman Demirel University, Kaskelen</small></div>
+  <button id="me" aria-label="Profile"><i>G</i><span>Sign in</span></button></div>
+ <nav class="tabs"><button class="on" data-t="route">Route</button><button data-t="ai">AI ✦</button><button data-t="events">Events</button><button data-t="friends">Friends</button><button data-t="guide">Guide</button></nav>
+ <section class="pane on" id="p-route">
+  <div class="fld"><i class="dot a"></i><input id="from" placeholder="From" autocomplete="off"><div class="sug" id="sf" hidden></div></div>
+  <div class="fld"><i class="dot b"></i><input id="to" placeholder="To — e.g. “where is the library”, D110, F307" autocomplete="off"><div class="sug" id="st" hidden></div></div>
+  <div class="row"><button class="chip" id="swap" style="margin-left:auto">⇅ Swap</button></div>
+  <div class="row" id="quick"></div>
+  <div id="result"><div class="empty">Choose a destination and the route is drawn on the map.<br>You start at the Main Entrance (Block C).</div></div>
+ </section>
+ <section class="pane" id="p-profile"></section>
+ <section class="pane" id="p-ai"><div class="aihd"><b>✦ SDU Assistant</b><small>Ask where anything is — I draw the route on the map.</small></div><div id="aiLog"></div><div class="row" id="aiChips"></div><form id="aiForm" class="aif"><input id="aiIn" placeholder="Ask: where is the library?" autocomplete="off" aria-label="Ask the assistant"><button class="btn sm">Send</button></form></section>
+ <section class="pane" id="p-events"><div id="evList"></div><div id="evAdmin"></div></section>
+ <section class="pane" id="p-friends">
+  <div class="fld"><input id="fq" placeholder="Find a student" style="padding-left:14px"></div>
+  <div id="frList"></div>
+ </section>
+ <section class="pane guide" id="p-guide">
+  <h3>How to use the map</h3>
+  <p>Type a place in “To”: library, canteen, D110, F307, relax room. The route starts at the Main Entrance or at any point you choose in “From”.</p>
+  <h3>Building</h3>
+  <ul><li><b>One vertical corridor</b> connects blocks I, H, G, F, E, D and C. Each block has a <b>lift (⇅)</b> in the middle of the block, not on the corridor.</li><li><b>Floors 1–3:</b> 10 rooms per block, e.g. D101–D110, F301–F310. Blocks H and I add 5 rooms on the east side (H111–H115, I111–I115). On floor 3 the east side of H holds the relax rooms instead.</li><li><b>Floor 4:</b> 5 rooms per block, e.g. F401–F405.</li><li><b>Barrels</b> (round lecture halls) face blocks D, E and F.</li><li><b>Market</b> (floor 1 only) is above the <b>Canteen</b>, which is above the barrels and on floors 1–3. Block H also has the H Canteen and H01–H03 on level −1.</li><li><b>Student Service</b> and the <b>SDU Store</b> (clothing shop) are below Block D, one under the other.</li><li><b>Library</b> is in Block B. The <b>Red Hall</b> is to its left, the round <b>Wi-Fi Zone</b> to its right.</li><li><b>Relax rooms</b> (men’s and women’s) are in Block H on floor 3.</li></ul>
+  <h3>Accounts</h3>
+  <p>Sign up or log in (top right). <b>Members</b> (students) browse the map, join events, add friends and edit their profile. <b>Admins</b> can also create and delete events and change member roles. Admin sign-up needs the admin code.</p>
+  <h3>Popular places</h3><div class="row" id="gq"></div>
+ </section>
+</aside>
+<main>
+ <svg id="map" aria-label="SDU campus map"></svg>
+ <div class="ttl" id="ttl"></div>
+ <div class="fls" id="fls"></div>
+ <div class="zm"><button id="zi" aria-label="Zoom in">+</button><button id="zo" aria-label="Zoom out">−</button></div>
+</main>
+</div>
+<dialog id="dlg"><button class="x" id="dx" aria-label="Close">×</button>
+ <h2 style="font-size:20px;margin-bottom:12px">Welcome to SDU Map</h2>
+ <div class="atab"><button data-m="login" class="on">Log in</button><button data-m="reg">Sign up</button></div>
+ <form id="loginF" class="frm"><input id="lemail" type="email" placeholder="Email" required autocomplete="username"><input id="lpw" type="password" placeholder="Password" required autocomplete="current-password"><button class="btn">Log in</button></form>
+ <form id="regF" class="frm" hidden><input id="rname" placeholder="Full name" required><input id="remail" type="email" placeholder="Email (name@sdu.edu.kz)" required><input id="rpw" type="password" placeholder="Password (6+ characters)" minlength="6" required autocomplete="new-password">
+  <select id="rfac"><option>Engineering &amp; Natural Sciences</option><option>Law &amp; Social Sciences</option><option>Education &amp; Humanities</option><option>Business School</option></select>
+  <select id="ryear"><option value="1">Year 1</option><option value="2">Year 2</option><option value="3">Year 3</option><option value="4">Year 4</option></select>
+  <select id="rrole"><option value="member">Member (student)</option><option value="admin">Admin</option></select>
+  <input id="rcode" type="password" placeholder="Admin code" hidden><button class="btn">Create account</button></form>
+ <p id="aerr" role="alert"></p>
+ <small class="hint">Demo accounts — admin: admin@sdu.edu.kz / admin123 · student: student@sdu.edu.kz / student123. Admin sign-up code: SDU-admin</small></dialog>
+<div id="toast"></div>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/map.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script src="js/assistant.js"></script>
+</body>
+</html>
