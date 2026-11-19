@@ -1,8 +1,3 @@
--- =====================================================================
--- SDU Map database. Paste ALL of this into Supabase -> SQL Editor -> Run.
--- =====================================================================
-
--- 1. TABLES (like sheets in a notebook) --------------------------------
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null,
@@ -14,13 +9,11 @@ create table public.profiles (
   created_at timestamptz not null default now()
 );
 
--- who is admin and who is member (clients can NOT write here directly)
 create table public.user_roles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   role text not null default 'member' check (role in ('member','admin'))
 );
 
--- secret settings (nobody can read this from the website)
 create table public.app_settings (key text primary key, value text not null);
 insert into public.app_settings values ('admin_code', 'CHANGE-ME-2026');
 
@@ -48,13 +41,12 @@ create table public.friendships (
   primary key (user_id, friend_id)
 );
 
--- 2. HELPER FUNCTIONS ---------------------------------------------------
 create or replace function public.is_admin() returns boolean
 language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.user_roles where user_id = auth.uid() and role = 'admin');
 $$;
 
--- when someone signs up, create their profile + member role automatically
+-- signs up, create their profile + member role automatically
 create or replace function public.handle_new_user() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
@@ -97,10 +89,9 @@ revoke execute on function public.set_role(uuid, text) from public, anon;
 grant execute on function public.claim_admin(text) to authenticated;
 grant execute on function public.set_role(uuid, text) to authenticated;
 
--- 3. SECURITY RULES (who may read / write what) ------------------------
 alter table public.profiles        enable row level security;
 alter table public.user_roles      enable row level security;
-alter table public.app_settings    enable row level security;   -- no rules = nobody can touch it
+alter table public.app_settings    enable row level security; 
 alter table public.events          enable row level security;
 alter table public.event_attendees enable row level security;
 alter table public.friendships     enable row level security;
@@ -124,7 +115,7 @@ create policy "see my friends"  on public.friendships for select to authenticate
 create policy "add my friends"  on public.friendships for insert to authenticated with check (auth.uid() = user_id);
 create policy "remove my friends" on public.friendships for delete to authenticated using (auth.uid() = user_id);
 
--- 4. FIRST EVENTS (optional) -------------------------------------------
+-- EVENTS (optional) -------------------------------------------
 insert into public.events (title, event_date, event_time, room, description, created_by_name) values
  ('Open Day',         '2026-12-10', '11:00', '1:Barrel E',  'Meet the faculties and tour the labs.', 'SDU Admin'),
  ('Career Fair',      '2026-12-15', '14:00', '1:Canteen',   'Companies from Almaty are hiring interns and graduates.', 'SDU Admin'),
