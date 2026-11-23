@@ -25,15 +25,18 @@ const supaApi=useDB?(()=>{
   async signOut(){await sb.auth.signOut()},
   async load(){
    const{data:{session}}=await sb.auth.getSession(),uid=session?session.user.id:null;
+   const chk=(n,r)=>{if(r.error)throw new Error(n+": "+r.error.message);return r.data||[]};
    const[ev,at]=await Promise.all([sb.from("events").select("*").order("event_date").order("event_time"),sb.from("event_attendees").select("event_id,user_id")]);
+   const events=chk("events",ev).map(e=>({id:e.id,t:e.title,d:e.event_date,tm:String(e.event_time).slice(0,5),room:e.room,desc:e.description,by:e.created_by,byName:e.created_by_name}));
+   const rows=chk("event_attendees",at),counts={};rows.forEach(a=>counts[a.event_id]=(counts[a.event_id]||0)+1);
    let people=[],me=null,friends=[];
    if(uid){
     const[pr,ro,fr]=await Promise.all([sb.from("profiles").select("*"),sb.from("user_roles").select("*"),sb.from("friendships").select("friend_id").eq("user_id",uid)]);
-    const role=Object.fromEntries((ro.data||[]).map(r=>[r.user_id,r.role]));
-    people=(pr.data||[]).map(p=>({id:p.id,name:p.name,email:p.email,faculty:p.faculty||"",year:p.year||1,bio:p.bio||"",color:p.color,role:role[p.id]||"member"}));
-    me=people.find(p=>p.id==uid)||null;friends=(fr.data||[]).map(r=>r.friend_id)}
-   const events=(ev.data||[]).map(e=>({id:e.id,t:e.title,d:e.event_date,tm:String(e.event_time).slice(0,5),room:e.room,desc:e.description,by:e.created_by,byName:e.created_by_name}));
-   const rows=at.data||[],counts={};rows.forEach(a=>counts[a.event_id]=(counts[a.event_id]||0)+1);
+    const role=Object.fromEntries(chk("user_roles",ro).map(r=>[r.user_id,r.role]));
+    people=chk("profiles",pr).map(p=>({id:p.id,name:p.name,email:p.email,faculty:p.faculty||"",year:p.year||1,bio:p.bio||"",color:p.color,role:role[p.id]||"member"}));
+    friends=chk("friendships",fr).map(r=>r.friend_id);
+    me=people.find(p=>p.id==uid)||null;
+    if(!me){const m=session.user.user_metadata||{};me={id:uid,name:m.name||"Student",email:session.user.email,faculty:m.faculty||"",year:+m.year||1,bio:"",color:COLORS[0],role:role[uid]||"member"};people.push(me)}}
    return{me,people,events,going:rows.filter(a=>a.user_id==uid).map(a=>a.event_id),counts,friends}},
   async createEvent(o,me){return fail(await sb.from("events").insert({title:o.t.trim(),event_date:o.d,event_time:o.tm,room:o.room,description:(o.desc||"").trim(),created_by_name:me.name}))},
   async deleteEvent(id){return fail(await sb.from("events").delete().eq("id",id))},

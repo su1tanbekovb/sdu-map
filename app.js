@@ -10,7 +10,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-tab]");if(
 let ST={me:null,people:[],events:[],going:[],counts:{},friends:[]},events=[];
 const me=()=>ST.me,isAdmin=()=>!!ST.me&&ST.me.role=="admin";
 const subl=u=>u.faculty+" · "+(u.role=="admin"?"Staff":"Year "+u.year);
-async function refresh(){try{ST=await api.load();events=ST.events}catch(e){console.error(e);toast("Could not reach the database")}renderAll()}
+let LASTERR="";
+async function refresh(){try{ST=await api.load();LASTERR=""}catch(e){console.error(e);LASTERR=e.message||String(e);toast("Database error: "+LASTERR)}events=ST.events;renderAll()}
 const need=m=>{toast(m||"Log in first");openAuth("login")};
 const rn=id=>{const r=ROOMS.find(x=>x.id==id);return r?r.name+" · "+fn(r.f):"—"};
 const fmt=d=>new Date(d+"T00:00").toLocaleDateString("en-GB",{day:"numeric",month:"long"});
@@ -23,7 +24,7 @@ document.querySelector(".atab").onclick=e=>{const b=e.target.closest("button");i
 $("#dx").onclick=()=>dlg.close();
 $("#rrole").onchange=e=>$("#rcode").hidden=e.target.value!="admin";
 document.addEventListener("click",e=>{const a=e.target.closest("[data-auth]");if(a)openAuth(a.dataset.auth)});
-$("#loginF").onsubmit=async e=>{e.preventDefault();const r=await api.signIn($("#lemail").value,$("#lpw").value);if(r.error){$("#aerr").textContent=r.error;return}dlg.close();$("#lpw").value="";await refresh();toast("Welcome back, "+ST.me.name)};
+$("#loginF").onsubmit=async e=>{e.preventDefault();const r=await api.signIn($("#lemail").value,$("#lpw").value);if(r.error){$("#aerr").textContent=r.error;return}$("#lpw").value="";await refresh();if(!ST.me){$("#aerr").textContent=LASTERR||"Logged in, but the profile could not be loaded.";return}dlg.close();toast("Welcome back, "+ST.me.name)};
 $("#regF").onsubmit=async e=>{e.preventDefault();
  const o={name:$("#rname").value.trim(),email:$("#remail").value.trim().toLowerCase(),pw:$("#rpw").value,faculty:$("#rfac").value,year:+$("#ryear").value,role:$("#rrole").value,code:$("#rcode").value},er=$("#aerr");
  if(o.name.length<2){er.textContent="Enter your full name.";return}
@@ -31,7 +32,7 @@ $("#regF").onsubmit=async e=>{e.preventDefault();
  if(o.pw.length<6){er.textContent="Password needs at least 6 characters.";return}
  if(o.role=="admin"&&!o.code){er.textContent="Enter the admin code.";return}
  const r=await api.signUp(o);await refresh();
- if(!ST.me){er.textContent=r.error||r.info||"Could not sign up.";return}
+ if(!ST.me){er.textContent=LASTERR||r.error||r.info||"Could not sign up.";return}
  dlg.close();showTab("profile");toast(r.error||"Account created. Welcome, "+ST.me.name)};
 $("#me").onclick=()=>ST.me?showTab("profile"):openAuth("login");
 function renderUser(){const u=ST.me;$("#me i").textContent=u?u.name[0].toUpperCase():"?";$("#me i").style.background=u?u.color:"var(--mut)";$("#me span").textContent=u?u.name.split(" ")[0]+(u.role=="admin"?" · admin":""):"Sign in"}
