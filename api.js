@@ -22,7 +22,7 @@ const supaApi=useDB?(()=>{
    if(o.role=="admin"){const r=await sb.rpc("claim_admin",{code:o.code});if(r.error)return{error:r.error.message};if(!r.data)return{error:"Wrong admin code. Your account was created as a member."}}
    return{}},
   async signIn(email,pw){return fail(await sb.auth.signInWithPassword({email,password:pw}))},
-  async signOut(){await sb.auth.signOut()},
+  async signOut(){try{await sb.auth.signOut({scope:"local"})}catch(e){console.error(e)}},
   async load(){
    const{data:{session}}=await sb.auth.getSession(),uid=session?session.user.id:null;
    const chk=(n,r)=>{if(r.error)throw new Error(n+": "+r.error.message);return r.data||[]};

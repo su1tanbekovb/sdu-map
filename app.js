@@ -77,7 +77,7 @@ function renderProfile(){const u=ST.me,el=$("#p-profile");
 $("#p-profile").onclick=async e=>{const u=ST.me;if(!u)return;const c=e.target.closest("[data-color]"),r=e.target.closest("[data-role]"),m=e.target.closest("[data-map]");
  if(c){await api.updateProfile({color:c.dataset.color},u);await refresh()}
  if(r&&isAdmin()){const x=ST.people.find(q=>q.id==r.dataset.role);if(x){const nr=x.role=="admin"?"member":"admin",res=await api.setRole(x.id,nr);toast(res.error||x.name+" is now "+nr);await refresh()}}
- if(e.target.closest("#logout")){await api.signOut();await refresh();showTab("route");toast("Logged out")}
+ if(e.target.closest("#logout")){await api.signOut();ST={...ST,me:null,people:[],going:[],friends:[]};showTab("route");await refresh();toast("Logged out")}
  if(m)setTo(ROOMS.find(q=>q.id==m.dataset.map))};
 $("#p-profile").onsubmit=async e=>{e.preventDefault();const u=ST.me,o=Object.fromEntries(new FormData(e.target));if(!u)return;
  const p={name:(o.name||"").trim()||u.name,faculty:o.faculty,bio:(o.bio||"").trim()};if(o.year)p.year=+o.year;
