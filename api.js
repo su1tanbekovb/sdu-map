@@ -29,19 +29,25 @@ const supaApi=useDB?(()=>{
    const[ev,at]=await Promise.all([sb.from("events").select("*").order("event_date").order("event_time"),sb.from("event_attendees").select("event_id,user_id")]);
    const events=chk("events",ev).map(e=>({id:e.id,t:e.title,d:e.event_date,tm:String(e.event_time).slice(0,5),room:e.room,desc:e.description,by:e.created_by,byName:e.created_by_name}));
    const rows=chk("event_attendees",at),counts={};rows.forEach(a=>counts[a.event_id]=(counts[a.event_id]||0)+1);
-   let people=[],me=null,friends=[];
+   let people=[],me=null,friends=[],incoming=[],outgoing=[];
    if(uid){
-    const[pr,ro,fr]=await Promise.all([sb.from("profiles").select("*"),sb.from("user_roles").select("*"),sb.from("friendships").select("friend_id").eq("user_id",uid)]);
+    const[pr,ro,fr]=await Promise.all([sb.from("profiles").select("*"),sb.from("user_roles").select("*"),sb.from("friend_requests").select("*")]);
     const role=Object.fromEntries(chk("user_roles",ro).map(r=>[r.user_id,r.role]));
     people=chk("profiles",pr).map(p=>({id:p.id,name:p.name,email:p.email,faculty:p.faculty||"",year:p.year||1,bio:p.bio||"",color:p.color,role:role[p.id]||"member"}));
-    friends=chk("friendships",fr).map(r=>r.friend_id);
+    const fq=chk("friend_requests",fr);
+    friends=fq.filter(r=>r.status=="accepted").map(r=>r.sender_id==uid?r.receiver_id:r.sender_id);
+    incoming=fq.filter(r=>r.status=="pending"&&r.receiver_id==uid).map(r=>r.sender_id);
+    outgoing=fq.filter(r=>r.status=="pending"&&r.sender_id==uid).map(r=>r.receiver_id);
     me=people.find(p=>p.id==uid)||null;
     if(!me){const m=session.user.user_metadata||{};me={id:uid,name:m.name||"Student",email:session.user.email,faculty:m.faculty||"",year:+m.year||1,bio:"",color:COLORS[0],role:role[uid]||"member"};people.push(me)}}
-   return{me,people,events,going:rows.filter(a=>a.user_id==uid).map(a=>a.event_id),counts,friends}},
+   return{me,people,events,going:rows.filter(a=>a.user_id==uid).map(a=>a.event_id),counts,friends,incoming,outgoing}},
   async createEvent(o,me){return fail(await sb.from("events").insert({title:o.t.trim(),event_date:o.d,event_time:o.tm,room:o.room,description:(o.desc||"").trim(),created_by_name:me.name}))},
   async deleteEvent(id){return fail(await sb.from("events").delete().eq("id",id))},
   async toggleGoing(id,isGoing,me){return fail(isGoing?await sb.from("event_attendees").delete().eq("event_id",id).eq("user_id",me.id):await sb.from("event_attendees").insert({event_id:id,user_id:me.id}))},
-  async toggleFriend(fid,isFriend,me){return fail(isFriend?await sb.from("friendships").delete().eq("user_id",me.id).eq("friend_id",fid):await sb.from("friendships").insert({user_id:me.id,friend_id:fid}))},
+  async friend(action,id,me){
+   if(action=="send")return fail(await sb.from("friend_requests").insert({sender_id:me.id,receiver_id:id}));
+   if(action=="accept"){const r=await sb.rpc("accept_friend_request",{sender:id});return r.error?{error:r.error.message}:r.data?{}:{error:"Request not found."}}
+   return fail(await sb.from("friend_requests").delete().or(`and(sender_id.eq.${me.id},receiver_id.eq.${id}),and(sender_id.eq.${id},receiver_id.eq.${me.id})`))},
   async updateProfile(p,me){return fail(await sb.from("profiles").update(p).eq("id",me.id))},
   async setRole(target,role){return fail(await sb.rpc("set_role",{target,new_role:role}))}}
 })():null;
@@ -52,8 +58,8 @@ const localApi=(()=>{
  const DEMO=[{id:1,t:"Open Day",d:"2026-11-20",tm:"11:00",room:"1:Barrel E",desc:"Meet the faculties and tour the labs.",byName:"SDU Admin"},
   {id:2,t:"Career Fair",d:"2026-11-25",tm:"14:00",room:"1:Canteen",desc:"Companies from Almaty are hiring interns and graduates.",byName:"SDU Admin"},
   {id:3,t:"Chess Tournament",d:"2026-12-02",tm:"16:30",room:"2:Barrel F",desc:"Open tournament for students of every year.",byName:"SDU Admin"}];
- let users=store.get("sdu4_users",[]),sid=store.get("sdu4_session",null),evs=store.get("sdu4_events",DEMO);
- const saveU=()=>store.set("sdu4_users",users),saveE=()=>store.set("sdu4_events",evs);
+ let users=store.get("sdu4_users",[]),sid=store.get("sdu4_session",null),evs=store.get("sdu4_events",DEMO),reqs=store.get("sdu5_requests",[]);
+ const saveU=()=>store.set("sdu4_users",users),saveE=()=>store.set("sdu4_events",evs),saveR=()=>store.set("sdu5_requests",reqs);
  const cur=()=>users.find(u=>u.id==sid)||null,adm=()=>{const u=cur();return !!u&&u.role=="admin"};
  const pub=u=>({id:u.id,name:u.name,email:u.email,role:u.role,faculty:u.faculty,year:u.year,bio:u.bio,color:u.color});
  async function hashPw(pw,salt){const s=salt+pw;try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}catch(e){let h=5381;for(const c of s)h=((h<<5)+h+c.charCodeAt(0))|0;return"f"+h}}
@@ -61,7 +67,7 @@ const localApi=(()=>{
  return{mode:"local",
   async init(){
    if(!users.some(u=>u.email=="admin@sdu.edu.kz"))await mk({name:"SDU Admin",email:"admin@sdu.edu.kz",pw:"admin123",role:"admin",faculty:FAC[3],year:4});
-   if(!users.some(u=>u.email=="student@sdu.edu.kz"))await mk({name:"Demo Student",email:"student@sdu.edu.kz",pw:"student123",role:"member",faculty:FAC[0],year:2})},
+   if(!users.some(u=>u.email=="student@sdu.edu.kz")){const st=await mk({name:"Demo Student",email:"student@sdu.edu.kz",pw:"student123",role:"member",faculty:FAC[0],year:2});reqs.push({from:"s0",to:st.id,status:"pending"});saveR()}},
   async signUp(o){
    if(users.some(u=>u.email==o.email))return{error:"This email is already registered. Log in instead."};
    if(o.role=="admin"&&o.code!="SDU-admin")return{error:"Wrong admin code."};
@@ -69,12 +75,17 @@ const localApi=(()=>{
   async signIn(email,pw){const u=users.find(x=>x.email==email.trim().toLowerCase());if(!u||u.hash!=await hashPw(pw,u.salt))return{error:"Wrong email or password."};sid=u.id;store.set("sdu4_session",sid);return{}},
   async signOut(){sid=null;store.set("sdu4_session",null)},
   async load(){const u=cur(),counts={};users.forEach(x=>x.going.forEach(i=>counts[i]=(counts[i]||0)+1));
-   return{me:u?pub(u):null,events:evs,counts,going:u?u.going:[],friends:u?u.friends:[],
+   return{me:u?pub(u):null,events:evs,counts,going:u?u.going:[],friends:u?reqs.filter(r=>r.status=="accepted"&&(r.from==u.id||r.to==u.id)).map(r=>r.from==u.id?r.to:r.from):[],incoming:u?reqs.filter(r=>r.status=="pending"&&r.to==u.id).map(r=>r.from):[],outgoing:u?reqs.filter(r=>r.status=="pending"&&r.from==u.id).map(r=>r.to):[],
     people:[...SEED.map((p,i)=>({id:"s"+i,name:p[0],faculty:p[1],year:p[2],role:"member",color:COLORS[i%7],bio:"",email:"",seed:true})),...users.map(pub)]}},
   async createEvent(o,me){if(!adm())return{error:"Only admins can create events."};evs.push({id:Date.now(),t:o.t.trim(),d:o.d,tm:o.tm,room:o.room,desc:(o.desc||"").trim(),by:me.id,byName:me.name});evs.sort((a,b)=>(a.d+a.tm).localeCompare(b.d+b.tm));saveE();return{}},
   async deleteEvent(id){if(!adm())return{error:"Only admins can delete events."};evs=evs.filter(v=>v.id!=id);users.forEach(x=>x.going=x.going.filter(i=>i!=id));saveU();saveE();return{}},
   async toggleGoing(id,isGoing){const u=cur();if(!u)return{error:"Log in first."};u.going=isGoing?u.going.filter(x=>x!=id):[...u.going,id];saveU();return{}},
-  async toggleFriend(fid,isFriend){const u=cur();if(!u)return{error:"Log in first."};u.friends=isFriend?u.friends.filter(x=>x!=fid):[...u.friends,fid];saveU();return{}},
+  async friend(action,id){const u=cur();if(!u)return{error:"Log in first."};
+   const pair=r=>(r.from==u.id&&r.to==id)||(r.from==id&&r.to==u.id);
+   if(action=="send"){if(reqs.some(pair))return{error:"A request already exists."};reqs.push({from:u.id,to:id,status:"pending"})}
+   else if(action=="accept"){const r=reqs.find(q=>q.from==id&&q.to==u.id&&q.status=="pending");if(!r)return{error:"Request not found."};r.status="accepted"}
+   else reqs=reqs.filter(r=>!pair(r));
+   saveR();return{}},
   async updateProfile(p){const u=cur();if(!u)return{error:"Log in first."};Object.assign(u,p);saveU();return{}},
   async setRole(target,role){if(!adm())return{error:"Only admins can change roles."};const x=users.find(q=>q.id==target);if(x){x.role=role;saveU()}return{}}}
 })();

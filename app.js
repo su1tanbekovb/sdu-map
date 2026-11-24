@@ -7,7 +7,7 @@ document.querySelector(".tabs").onclick=e=>{const b=e.target.closest("button");i
 const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),2600)};
 document.addEventListener("click",e=>{const t=e.target.closest("[data-tab]");if(t)showTab(t.dataset.tab)});
 
-let ST={me:null,people:[],events:[],going:[],counts:{},friends:[]},events=[];
+let ST={me:null,people:[],events:[],going:[],counts:{},friends:[],incoming:[],outgoing:[]},events=[];
 const me=()=>ST.me,isAdmin=()=>!!ST.me&&ST.me.role=="admin";
 const subl=u=>u.faculty+" · "+(u.role=="admin"?"Staff":"Year "+u.year);
 let LASTERR="";
@@ -54,11 +54,22 @@ $("#evList").onclick=async e=>{const b=e.target.closest("button");if(!b)return;
 
 /* ---------- Friends ---------- */
 const people=()=>ST.people.filter(p=>!ST.me||p.id!=ST.me.id);
-function renderFriends(){const u=ST.me,q=$("#fq").value.toLowerCase(),fr=ST.friends;
- const list=people().filter(p=>p.name.toLowerCase().includes(q)).sort((a,b)=>fr.includes(b.id)-fr.includes(a.id));
- $("#frList").innerHTML=(u?`<p style="color:var(--mut);margin:4px 0">Friends: <b>${fr.length}</b></p>`:`<div class="card"><p style="margin:0">Log in to add friends. <button class="chip" data-auth="login">Log in</button></p></div>`)+list.map(p=>`<div class="person"><i style="background:${p.color}">${esc(p.name[0])}</i><div><b>${esc(p.name)}</b><small>${esc(subl(p))}</small></div><button class="btn sm ${fr.includes(p.id)?"sec":""}" data-fr="${p.id}">${fr.includes(p.id)?"Friends":"Add friend"}</button></div>`).join("")}
+const fbtn=p=>{const id=p.id;
+ if(ST.friends.includes(id))return`<button class="btn sm sec" data-fa="remove" data-id="${id}">Unfriend</button>`;
+ if(ST.incoming.includes(id))return`<button class="btn sm" data-fa="accept" data-id="${id}">Accept</button><button class="btn sm sec" data-fa="decline" data-id="${id}">Decline</button>`;
+ if(ST.outgoing.includes(id))return`<button class="btn sm sec" data-fa="cancel" data-id="${id}">Cancel request</button>`;
+ return`<button class="btn sm" data-fa="send" data-id="${id}">Add friend</button>`};
+const frow=p=>`<div class="person"><i style="background:${p.color}">${esc(p.name[0])}</i><div><b>${esc(p.name)}</b><small>${esc(subl(p))}${ST.outgoing.includes(p.id)?" · request sent":""}${ST.incoming.includes(p.id)?" · wants to be your friend":""}</small></div><span class="fb">${fbtn(p)}</span></div>`;
+function renderFriends(){const u=ST.me,q=$("#fq").value.toLowerCase(),all=people(),rank=p=>ST.incoming.includes(p.id)?0:ST.friends.includes(p.id)?1:ST.outgoing.includes(p.id)?2:3;
+ const reqs=all.filter(p=>ST.incoming.includes(p.id)),list=all.filter(p=>p.name.toLowerCase().includes(q)&&!ST.incoming.includes(p.id)).sort((a,b)=>rank(a)-rank(b));
+ document.querySelector('.tabs [data-t=friends]').innerHTML="Friends"+(reqs.length?` <span class="nb">${reqs.length}</span>`:"");
+ $("#frList").innerHTML=(u?`<p style="color:var(--mut);margin:4px 0">Friends: <b>${ST.friends.length}</b></p>`:`<div class="card"><p style="margin:0">Log in to add friends. <button class="chip" data-auth="login">Log in</button></p></div>`)
+  +(reqs.length?`<h3 style="margin:12px 0 2px;font-size:15px">Friend requests <span class="nb">${reqs.length}</span></h3>`+reqs.map(frow).join(""):"")
+  +(reqs.length&&list.length?`<h3 style="margin:16px 0 2px;font-size:15px">Students</h3>`:"")+list.map(frow).join("")}
 $("#fq").oninput=renderFriends;
-$("#frList").onclick=async e=>{const b=e.target.closest("[data-fr]");if(!b)return;if(!ST.me)return need("Log in to add friends");const id=b.dataset.fr,had=ST.friends.includes(id),r=await api.toggleFriend(id,had,ST.me);if(r.error)return toast(r.error);await refresh();toast(had?"Removed from friends":"Friend added")};
+$("#frList").onclick=async e=>{const b=e.target.closest("[data-fa]");if(!b)return;if(!ST.me)return need("Log in to add friends");
+ const act=b.dataset.fa,r=await api.friend(act,b.dataset.id,ST.me);if(r.error)return toast(r.error);await refresh();
+ toast({send:"Friend request sent",accept:"You are now friends",decline:"Request declined",cancel:"Request cancelled",remove:"Removed from friends"}[act])};
 
 /* ---------- Profile ---------- */
 const opts=(l,v)=>l.map(x=>`<option${x==v?" selected":""}>${esc(x)}</option>`).join("");
@@ -77,7 +88,7 @@ function renderProfile(){const u=ST.me,el=$("#p-profile");
 $("#p-profile").onclick=async e=>{const u=ST.me;if(!u)return;const c=e.target.closest("[data-color]"),r=e.target.closest("[data-role]"),m=e.target.closest("[data-map]");
  if(c){await api.updateProfile({color:c.dataset.color},u);await refresh()}
  if(r&&isAdmin()){const x=ST.people.find(q=>q.id==r.dataset.role);if(x){const nr=x.role=="admin"?"member":"admin",res=await api.setRole(x.id,nr);toast(res.error||x.name+" is now "+nr);await refresh()}}
- if(e.target.closest("#logout")){await api.signOut();ST={...ST,me:null,people:[],going:[],friends:[]};showTab("route");await refresh();toast("Logged out")}
+ if(e.target.closest("#logout")){await api.signOut();ST={...ST,me:null,people:[],going:[],friends:[],incoming:[],outgoing:[]};showTab("route");await refresh();toast("Logged out")}
  if(m)setTo(ROOMS.find(q=>q.id==m.dataset.map))};
 $("#p-profile").onsubmit=async e=>{e.preventDefault();const u=ST.me,o=Object.fromEntries(new FormData(e.target));if(!u)return;
  const p={name:(o.name||"").trim()||u.name,faculty:o.faculty,bio:(o.bio||"").trim()};if(o.year)p.year=+o.year;

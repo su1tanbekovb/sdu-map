@@ -97,3 +97,5 @@ dialog{position:relative}
 .aif input:focus{border-color:var(--g);outline:0}
 @media(max-width:760px){#app{flex-direction:column-reverse}aside{width:100%;height:56vh;border-radius:22px 22px 0 0;margin-top:-18px}main{height:44vh;flex:none}.fls{top:12px;transform:none}.fls button{width:42px;height:42px}.ttl{display:none}}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition:none!important}}
+.nb{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#e5484d;color:#fff;font-size:11px;font-weight:800;vertical-align:middle}
+.fb{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
