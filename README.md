@@ -77,23 +77,6 @@ The website will open in your browser.
 
 The project uses Supabase for database management and authentication.
 
-To enable database functionality:
-
-1. Create a project on [Supabase](https://supabase.com/).
-2. Open the SQL Editor.
-3. Execute the SQL script from `database/schema.sql`.
-4. Copy your Project URL and anon public key.
-5. Add your credentials to `config.js`.
-
-Example:
-
-```javascript
-window.SDU_CONFIG = {
-    supabaseUrl: "YOUR_SUPABASE_URL",
-    supabaseKey: "YOUR_SUPABASE_ANON_KEY"
-};
-```
-
 **Note:** The application also supports a demo mode without Supabase. In this mode, data is stored locally in the browser.
 
 Never expose your Supabase `service_role` key in frontend code.
