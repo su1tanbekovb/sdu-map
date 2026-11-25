@@ -1,7 +1,3 @@
-/* =====================================================================
-   APP: tabs, login/sign up, events, friends, profile.
-   Everything talks to the database only through `api` (see api.js).
-   ===================================================================== */
 function showTab(t){document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t==t));document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.id=="p-"+t))}
 document.querySelector(".tabs").onclick=e=>{const b=e.target.closest("button");if(b)showTab(b.dataset.t)};
 const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),2600)};
