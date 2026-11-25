@@ -1,106 +1,133 @@
-# 🗺️ SDU Map — как запустить сайт (объясняю просто)
+# 🗺️ SDU Map — Smart University Navigation
 
-## Сначала поймём, из чего всё состоит
+**SDU Map** is a web-based university navigation platform designed to help students, teachers, and visitors navigate Suleyman Demirel University (SDU) more easily.
 
-Представь, что наш сайт — это **магазин**:
+The platform provides an interactive campus map, classroom search, navigation assistance, and useful university services in one place.
 
-| Что | Как в магазине | В нашем проекте |
-|---|---|---|
-| **Код** (папка с файлами) | витрина и вывеска — то, что видят люди | файлы `index.html`, `style.css`, `js/…` |
-| **База данных** | тетрадь, куда продавец записывает всё важное: кто зарегистрировался, какие события, кто чей друг | **Supabase** |
-| **Хостинг** | здание, где стоит магазин, чтобы все могли прийти | **GitHub Pages** |
-| **VS Code** | рабочий стол, где ты чинишь и красишь витрину | программа **Visual Studio Code** |
-
-Все три сервиса **бесплатные**. Регистрироваться в них ты должен(на) сам(а) — за тебя этого сделать нельзя, это твои личные аккаунты.
+🌐 **Live Demo:** https://su1tanbekovb.github.io/sdu-map/
 
 ---
 
-## Что внутри папки
+## ✨ Features
 
-```
-sdu-map/
-├── index.html        ← главная страница (скелет сайта)
-├── style.css         ← краски и красота
-├── config.js         ← сюда вставим «ключи» от базы данных
-├── js/
-│   ├── map.js        ← карта, кабинеты, поиск пути
-│   ├── api.js        ← «почтальон»: общается с базой данных
-│   ├── app.js        ← вход, регистрация, события, друзья, профиль
-│   └── assistant.js  ← ИИ-помощник (ищет кабинеты)
-└── database/
-    └── schema.sql    ← инструкция для базы данных: какие «листы» создать
-```
+- 🗺️ **Interactive Campus Map** — Explore SDU buildings and university areas.
+- 🔍 **Room Search** — Quickly find classrooms by their room codes.
+- 🧭 **Navigation System** — Find your way between university locations.
+- 🤖 **AI Assistant** — Get assistance with finding classrooms and navigating campus.
+- 👤 **User Authentication** — Register and log in to your account.
+- 📅 **Events Management** — View and manage university events.
+- 👥 **Friends System** — Connect with other students.
+- ⚙️ **User Profiles** — Manage your personal account.
+- 🔐 **Role Management** — Different permissions for administrators and students.
 
-> 💡 **Сайт работает и без базы данных** (демо-режим): данные хранятся только в твоём браузере. Так можно сначала всё посмотреть, а потом подключить настоящую базу.
+## 🛠️ Technologies Used
 
----
-
-## ШАГ 1. Установи VS Code и открой проект
-
-1. Зайди на **code.visualstudio.com** → нажми **Download** → установи, как любую программу.
-2. Распакуй скачанный `sdu-map.zip` (правая кнопка → «Извлечь всё»).
-3. Открой VS Code → **File → Open Folder…** → выбери папку `sdu-map`.
-4. Слева нажми на значок кубиков (**Extensions**), найди **Live Server** (автор Ritwick Dey) → **Install**.
-5. Открой `index.html` → внизу справа нажми **Go Live**. Откроется сайт в браузере! 🎉
-
-Попробуй зайти: `admin@sdu.edu.kz` / `admin123` (демо-админ) или `student@sdu.edu.kz` / `student123` (демо-студент).
-
----
-
-## ШАГ 2. Заведи базу данных (Supabase)
-
-1. Зайди на **supabase.com** → **Start your project** → войди через GitHub или почту.
-2. Нажми **New project**. Придумай имя (`sdu-map`), **придумай пароль базы и запиши его** (он нужен только тебе), выбери ближайший регион (например *Frankfurt*) → **Create**. Подожди 1–2 минуты.
-3. Слева выбери **SQL Editor** → **New query**.
-4. В VS Code открой `database/schema.sql`, нажми **Ctrl+A**, **Ctrl+C** (выделить всё и скопировать). Вставь в Supabase (**Ctrl+V**) → нажми зелёную кнопку **Run**. Должно написать *Success*. Это создало все «листы тетради» и правила, кто что может делать.
-5. **Поменяй секретный код админа.** В новом запросе вставь это (замени текст на свой секрет) и нажми Run:
-   ```sql
-   update public.app_settings set value = 'мой-супер-секрет-123' where key = 'admin_code';
-   ```
-   Этот код нужен, чтобы зарегистрироваться как админ. Никому его не говори, кроме будущих админов.
-6. Слева: **Authentication → Sign In / Providers → Email** → выключи **Confirm email** (так регистрация работает сразу, без письма). Нажми **Save**.
-7. Слева внизу: **Project Settings (шестерёнка) → API**. Скопируй:
-   - **Project URL** (похоже на `https://abcd.supabase.co`)
-   - **anon public** ключ (длинная строка)
-8. В VS Code открой `config.js` и вставь их между кавычек:
-   ```js
-   window.SDU_CONFIG = {
-     supabaseUrl: "https://abcd.supabase.co",
-     supabaseKey: "длинный-anon-ключ"
-   };
-   ```
-   Сохрани (**Ctrl+S**) и обнови страницу. Теперь сайт пишет в настоящую базу! Зарегистрируй себя с ролью **Admin** и своим секретным кодом.
-
-> ⚠️ `anon` ключ можно показывать всем — его защищают правила из `schema.sql`. А вот ключ **service_role** никогда никому не показывай и не вставляй в сайт!
-
----
-
-## ШАГ 3. Выложи сайт в интернет (GitHub Pages)
-
-1. Зайди на **github.com** → **Sign up** → создай аккаунт (имя запомни — это `ИМЯ`).
-2. Нажми **+** вверху справа → **New repository**. Название: `sdu-map`. Выбери **Public** → **Create repository**.
-3. **Самый простой способ загрузить файлы:** на странице репозитория нажми **uploading an existing file**, затем перетащи **всё содержимое** папки `sdu-map` (файлы и папки `js`, `database`) → внизу **Commit changes**.
-   *(Другой способ — через VS Code: значок «ветки» слева → Publish to GitHub.)*
-4. Зайди в **Settings → Pages**. В «Branch» выбери **main** и папку **/(root)** → **Save**.
-5. Подожди 1–2 минуты и обнови страницу — появится ссылка:
-   **`https://ИМЯ.github.io/sdu-map/`** 🎉 Это адрес твоего сайта, отправляй друзьям!
-6. Вернись в Supabase → **Authentication → URL Configuration** → в поле **Site URL** вставь эту ссылку → **Save**.
-
-**Как обновлять сайт потом:** поменял файл → снова загрузил в GitHub (или Commit + Push в VS Code) → через минуту сайт обновился.
-
----
-
-## Если что-то не работает
-
-| Проблема | Что делать |
+| Technology | Purpose |
 |---|---|
-| Сайт пишет «Could not reach the database» | Проверь `config.js`: нет ли лишних пробелов, кавычек. URL должен начинаться с `https://` |
-| «Wrong admin code» | Код должен быть тот, что ты поставил в шаге 2.5 |
-| Админ не может создать событие | Зайди в Supabase → **Table Editor → user_roles**: у твоей строки должно стоять `admin` |
-| После регистрации просит письмо | Ты не выключил **Confirm email** (шаг 2.6) |
-| Страница на GitHub пустая | Подожди пару минут; проверь, что `index.html` лежит в корне репозитория, а не в подпапке |
+| HTML5 | Website structure |
+| CSS3 | Styling and responsive design |
+| JavaScript | Application functionality |
+| Supabase | Database and authentication |
+| GitHub Pages | Website hosting |
 
-## Что важно помнить
-- Карту и кабинеты можно менять в `js/map.js` (список комнат вверху).
-- Роли «админ / мембер» теперь защищены **на стороне базы данных**: даже если кто-то хитрый поправит код в браузере, база не даст ему создать событие.
-- Пароли хранит Supabase в зашифрованном виде — мы их не видим.
+## 📁 Project Structure
+
+```text
+sdu-map/
+│
+├── index.html
+├── style.css
+├── config.js
+│
+├── js/
+│   ├── map.js
+│   ├── api.js
+│   ├── app.js
+│   └── assistant.js
+│
+└── database/
+    └── schema.sql
+```
+
+## 🚀 Getting Started
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/su1tanbekovb/sdu-map.git
+```
+
+### 2. Open the project
+
+```bash
+cd sdu-map
+```
+
+Open the project folder in Visual Studio Code.
+
+### 3. Run the website
+
+Install the Live Server extension in VS Code.
+
+Open `index.html` and click **Go Live**.
+
+The website will open in your browser.
+
+## 🗄️ Database Configuration
+
+The project uses Supabase for database management and authentication.
+
+To enable database functionality:
+
+1. Create a project on [Supabase](https://supabase.com/).
+2. Open the SQL Editor.
+3. Execute the SQL script from `database/schema.sql`.
+4. Copy your Project URL and anon public key.
+5. Add your credentials to `config.js`.
+
+Example:
+
+```javascript
+window.SDU_CONFIG = {
+    supabaseUrl: "YOUR_SUPABASE_URL",
+    supabaseKey: "YOUR_SUPABASE_ANON_KEY"
+};
+```
+
+**Note:** The application also supports a demo mode without Supabase. In this mode, data is stored locally in the browser.
+
+Never expose your Supabase `service_role` key in frontend code.
+
+## 🌍 Deployment
+
+The project is hosted using GitHub Pages.
+
+Live website:
+
+https://su1tanbekovb.github.io/sdu-map/
+
+To deploy your own version:
+
+1. Upload the project files to a GitHub repository.
+2. Open repository Settings.
+3. Navigate to Pages.
+4. Select the `main` branch and `/root` folder.
+5. Save your settings.
+
+## 🎯 Project Goal
+
+The main goal of SDU Map is to improve the university experience by making campus navigation faster, simpler, and more accessible.
+
+Instead of spending time searching for classrooms and university locations, students can use one platform to find the information they need.
+
+## 👨‍💻 Developer
+
+**Baqdaulet Sultanbekov**
+
+Project: SDU Map
+
+GitHub: [@su1tanbekovb](https://github.com/su1tanbekovb)
+
+---
+
+⭐ If you find this project useful, consider giving it a star on GitHub!
