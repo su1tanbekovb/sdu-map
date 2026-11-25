@@ -1,15 +1,9 @@
-/* =====================================================================
-   DATA LAYER. Two versions with the same functions:
-   - supaApi  = real shared database (Supabase)  -> used when config.js has keys
-   - localApi = demo mode, data stays in this browser
-   ===================================================================== */
 const FAC=["Engineering & Natural Sciences","Law & Social Sciences","Education & Humanities","Business School"];
 const COLORS=["#2f6bff","#1db93c","#f59e0b","#8b5cf6","#ec4899","#0ea5e9","#ef4444"];
 const cfg=window.SDU_CONFIG||{};
 const useDB=!!(cfg.supabaseUrl&&cfg.supabaseKey&&window.supabase);
 if(cfg.supabaseUrl&&!window.supabase)console.warn("Supabase library did not load - running in demo mode.");
 
-/* ---------- Supabase (real database) ---------- */
 const supaApi=useDB?(()=>{
  const sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
  const fail=r=>r.error?{error:r.error.message}:{};
@@ -52,7 +46,6 @@ const supaApi=useDB?(()=>{
   async setRole(target,role){return fail(await sb.rpc("set_role",{target,new_role:role}))}}
 })():null;
 
-/* ---------- Demo mode (this browser only) ---------- */
 const localApi=(()=>{
  const SEED=[["Aidana Nurlanova","Computer Science",2],["Timur Serikov","Business",3],["Dana Kassymova","Philology",1],["Arman Zhumabekov","Engineering",4],["Madina Omarova","Psychology",2],["Yerlan Bakhtiyarov","Computer Science",3],["Aliya Tolegen","International Relations",1]];
  const DEMO=[{id:1,t:"Open Day",d:"2026-11-20",tm:"11:00",room:"1:Barrel E",desc:"Meet the faculties and tour the labs.",byName:"SDU Admin"},
