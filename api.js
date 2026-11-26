@@ -1,9 +1,15 @@
+/* =====================================================================
+   DATA LAYER. Two versions with the same functions:
+   - supaApi  = real shared database (Supabase)  -> used when config.js has keys
+   - localApi = demo mode, data stays in this browser
+   ===================================================================== */
 const FAC=["Engineering & Natural Sciences","Law & Social Sciences","Education & Humanities","Business School"];
 const COLORS=["#2f6bff","#1db93c","#f59e0b","#8b5cf6","#ec4899","#0ea5e9","#ef4444"];
 const cfg=window.SDU_CONFIG||{};
 const useDB=!!(cfg.supabaseUrl&&cfg.supabaseKey&&window.supabase);
 if(cfg.supabaseUrl&&!window.supabase)console.warn("Supabase library did not load - running in demo mode.");
 
+/* ---------- Supabase (real database) ---------- */
 const supaApi=useDB?(()=>{
  const sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
  const fail=r=>r.error?{error:r.error.message}:{};
@@ -42,45 +48,49 @@ const supaApi=useDB?(()=>{
    if(action=="send")return fail(await sb.from("friend_requests").insert({sender_id:me.id,receiver_id:id}));
    if(action=="accept"){const r=await sb.rpc("accept_friend_request",{sender:id});return r.error?{error:r.error.message}:r.data?{}:{error:"Request not found."}}
    return fail(await sb.from("friend_requests").delete().or(`and(sender_id.eq.${me.id},receiver_id.eq.${id}),and(sender_id.eq.${id},receiver_id.eq.${me.id})`))},
-  async updateProfile(p,me){return fail(await sb.from("profiles").update(p).eq("id",me.id))},
-  async setRole(target,role){return fail(await sb.rpc("set_role",{target,new_role:role}))}}
+  async updateProfile(p,me){return fail(await sb.from("profiles").update(p).eq("id",me.id))}}
 })():null;
 
+/* ---------- Demo mode (this browser only) ---------- */
 const localApi=(()=>{
  const SEED=[["Aidana Nurlanova","Computer Science",2],["Timur Serikov","Business",3],["Dana Kassymova","Philology",1],["Arman Zhumabekov","Engineering",4],["Madina Omarova","Psychology",2],["Yerlan Bakhtiyarov","Computer Science",3],["Aliya Tolegen","International Relations",1]];
- const DEMO=[{id:1,t:"Open Day",d:"2026-11-20",tm:"11:00",room:"1:Barrel E",desc:"Meet the faculties and tour the labs.",byName:"SDU Admin"},
+ const DEMO=[{id:1,t:"Open Day",d:"2026-11-20",tm:"11:00",room:"1:Barrel E1",desc:"Meet the faculties and tour the labs.",byName:"SDU Admin"},
   {id:2,t:"Career Fair",d:"2026-11-25",tm:"14:00",room:"1:Canteen",desc:"Companies from Almaty are hiring interns and graduates.",byName:"SDU Admin"},
-  {id:3,t:"Chess Tournament",d:"2026-12-02",tm:"16:30",room:"2:Barrel F",desc:"Open tournament for students of every year.",byName:"SDU Admin"}];
+  {id:3,t:"Chess Tournament",d:"2026-12-02",tm:"16:30",room:"2:Barrel D",desc:"Open tournament for students of every year.",byName:"SDU Admin"}];
  let users=store.get("sdu4_users",[]),sid=store.get("sdu4_session",null),evs=store.get("sdu4_events",DEMO),reqs=store.get("sdu5_requests",[]);
+ const ADMIN_CODES=["SDU-A1","SDU-A2","SDU-A3"];
  const saveU=()=>store.set("sdu4_users",users),saveE=()=>store.set("sdu4_events",evs),saveR=()=>store.set("sdu5_requests",reqs);
  const cur=()=>users.find(u=>u.id==sid)||null,adm=()=>{const u=cur();return !!u&&u.role=="admin"};
  const pub=u=>({id:u.id,name:u.name,email:u.email,role:u.role,faculty:u.faculty,year:u.year,bio:u.bio,color:u.color});
  async function hashPw(pw,salt){const s=salt+pw;try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}catch(e){let h=5381;for(const c of s)h=((h<<5)+h+c.charCodeAt(0))|0;return"f"+h}}
- async function mk(o){const salt=Math.random().toString(36).slice(2),u={id:"u"+Date.now()+Math.random().toString(36).slice(2,6),name:o.name,email:o.email,salt,hash:await hashPw(o.pw,salt),role:o.role,faculty:o.faculty,year:o.year,bio:"",color:COLORS[users.length%COLORS.length],friends:[],going:[]};users.push(u);saveU();return u}
+ const mk=async o=>{const salt=Math.random().toString(36).slice(2),u={id:"u"+Date.now()+Math.random().toString(36).slice(2,6),name:o.name,email:o.email,salt,hash:await hashPw(o.pw,salt),role:o.role||"member",faculty:o.faculty||"",year:o.year||1,bio:"",color:COLORS[users.length%COLORS.length],going:[]};users.push(u);saveU();return u};
  return{mode:"local",
   async init(){
+   const fixPw=async(e,pw)=>{const u=users.find(x=>x.email==e);if(u&&!u.hash){u.salt=Math.random().toString(36).slice(2);u.hash=await hashPw(pw,u.salt);saveU()}};
    if(!users.some(u=>u.email=="admin@sdu.edu.kz"))await mk({name:"SDU Admin",email:"admin@sdu.edu.kz",pw:"admin123",role:"admin",faculty:FAC[3],year:4});
-   if(!users.some(u=>u.email=="student@sdu.edu.kz")){const st=await mk({name:"Demo Student",email:"student@sdu.edu.kz",pw:"student123",role:"member",faculty:FAC[0],year:2});reqs.push({from:"s0",to:st.id,status:"pending"});saveR()}},
+   if(!users.some(u=>u.email=="student@sdu.edu.kz")){const st=await mk({name:"Demo Student",email:"student@sdu.edu.kz",pw:"student123",faculty:FAC[0],year:2});reqs.push({from:"s0",to:st.id,status:"pending"});saveR()}
+   await fixPw("admin@sdu.edu.kz","admin123");await fixPw("student@sdu.edu.kz","student123")},
   async signUp(o){
    if(users.some(u=>u.email==o.email))return{error:"This email is already registered. Log in instead."};
-   if(o.role=="admin"&&o.code!="SDU-admin")return{error:"Wrong admin code."};
+   if(o.role=="admin"&&!ADMIN_CODES.includes(o.code))return{error:"Wrong admin code."};
    sid=(await mk(o)).id;store.set("sdu4_session",sid);return{}},
-  async signIn(email,pw){const u=users.find(x=>x.email==email.trim().toLowerCase());if(!u||u.hash!=await hashPw(pw,u.salt))return{error:"Wrong email or password."};sid=u.id;store.set("sdu4_session",sid);return{}},
+  async signIn(email,pw){const u=users.find(x=>x.email==email.trim().toLowerCase());if(!u||!u.hash||u.hash!=await hashPw(pw,u.salt))return{error:"Wrong email or password."};sid=u.id;store.set("sdu4_session",sid);return{}},
   async signOut(){sid=null;store.set("sdu4_session",null)},
-  async load(){const u=cur(),counts={};users.forEach(x=>x.going.forEach(i=>counts[i]=(counts[i]||0)+1));
-   return{me:u?pub(u):null,events:evs,counts,going:u?u.going:[],friends:u?reqs.filter(r=>r.status=="accepted"&&(r.from==u.id||r.to==u.id)).map(r=>r.from==u.id?r.to:r.from):[],incoming:u?reqs.filter(r=>r.status=="pending"&&r.to==u.id).map(r=>r.from):[],outgoing:u?reqs.filter(r=>r.status=="pending"&&r.from==u.id).map(r=>r.to):[],
+  async load(){const u=cur(),counts={};users.forEach(x=>(x.going||[]).forEach(i=>counts[i]=(counts[i]||0)+1));
+   return{me:u?pub(u):null,events:evs,counts,going:u?u.going||[]:[],
+    friends:u?reqs.filter(r=>r.status=="accepted"&&(r.from==u.id||r.to==u.id)).map(r=>r.from==u.id?r.to:r.from):[],
+    incoming:u?reqs.filter(r=>r.status=="pending"&&r.to==u.id).map(r=>r.from):[],outgoing:u?reqs.filter(r=>r.status=="pending"&&r.from==u.id).map(r=>r.to):[],
     people:[...SEED.map((p,i)=>({id:"s"+i,name:p[0],faculty:p[1],year:p[2],role:"member",color:COLORS[i%7],bio:"",email:"",seed:true})),...users.map(pub)]}},
   async createEvent(o,me){if(!adm())return{error:"Only admins can create events."};evs.push({id:Date.now(),t:o.t.trim(),d:o.d,tm:o.tm,room:o.room,desc:(o.desc||"").trim(),by:me.id,byName:me.name});evs.sort((a,b)=>(a.d+a.tm).localeCompare(b.d+b.tm));saveE();return{}},
-  async deleteEvent(id){if(!adm())return{error:"Only admins can delete events."};evs=evs.filter(v=>v.id!=id);users.forEach(x=>x.going=x.going.filter(i=>i!=id));saveU();saveE();return{}},
-  async toggleGoing(id,isGoing){const u=cur();if(!u)return{error:"Log in first."};u.going=isGoing?u.going.filter(x=>x!=id):[...u.going,id];saveU();return{}},
+  async deleteEvent(id){if(!adm())return{error:"Only admins can delete events."};evs=evs.filter(v=>v.id!=id);users.forEach(x=>x.going=(x.going||[]).filter(i=>i!=id));saveU();saveE();return{}},
+  async toggleGoing(id,isGoing){const u=cur();if(!u)return{error:"Log in first."};const g=u.going||[];u.going=isGoing?g.filter(x=>x!=id):[...g,id];saveU();return{}},
   async friend(action,id){const u=cur();if(!u)return{error:"Log in first."};
    const pair=r=>(r.from==u.id&&r.to==id)||(r.from==id&&r.to==u.id);
    if(action=="send"){if(reqs.some(pair))return{error:"A request already exists."};reqs.push({from:u.id,to:id,status:"pending"})}
    else if(action=="accept"){const r=reqs.find(q=>q.from==id&&q.to==u.id&&q.status=="pending");if(!r)return{error:"Request not found."};r.status="accepted"}
    else reqs=reqs.filter(r=>!pair(r));
    saveR();return{}},
-  async updateProfile(p){const u=cur();if(!u)return{error:"Log in first."};Object.assign(u,p);saveU();return{}},
-  async setRole(target,role){if(!adm())return{error:"Only admins can change roles."};const x=users.find(q=>q.id==target);if(x){x.role=role;saveU()}return{}}}
+  async updateProfile(p){const u=cur();if(!u)return{error:"Log in first."};Object.assign(u,p);saveU();return{}}}
 })();
 
 const api=useDB?supaApi:localApi;

@@ -5,6 +5,7 @@ const CX=315;
 const BLK=[["I",40,"#0e7490",""],["H",200,"#2b5fa8",""],["G",360,"#5a7d2e","Business School"],["F",520,"#2a3a8c","Engineering & Natural Sciences"],["E",680,"#8a2330","Education & Humanities"],["D",840,"#8a2a8a","Law & Social Sciences"]];
 const LIFTS=[...BLK.map(b=>({x:150,y:b[1]+80,blk:b[0]}))];
 const ROOMS=[];
+const ROOM_ALIAS={"1:Barrel E":"1:Barrel E1","2:Barrel F":"2:Barrel D"};   // old event places -> new names
 const add=o=>{o.id=o.f+":"+o.name;o.kw=(o.kw||"")+" "+o.name;if(o.cx==null){o.cx=o.x+o.w/2;o.cy=o.y+o.h/2}ROOMS.push(o)};
 const spec=(f,name,x,y,w,h,c,jy,side,ic,kw,ex)=>add({f,name,x,y,w,h,c,ic,kw,...ex,p:[[side=="w"?x+w:x,jy],[CX,jy]]});
 /* places (listed first so they show in default suggestions) */
@@ -14,18 +15,19 @@ add({f:1,name:"Wi-Fi Zone",x:280,y:1263,w:110,h:110,circle:1,rings:1,c:"#6d4cc2"
 add({f:1,name:"Main Entrance",x:400,y:1262,w:90,h:38,c:"#d62839",kw:"entrance exit door start",p:[[445,1262],[445,1250],[CX,1250]]});
 spec(1,"Student Service",30,1010,80,120,"#2f7ed8",1070,"w","🗂","support documents certificates help Block D");
 spec(1,"SDU Store",30,1140,80,80,"#b83280",1180,"w","👕","clothes merch hoodie shop boutique",{awn:1});
-spec(1,"Market",345,365,125,58,"#e67e22",394,"e","🛒","shop groceries snacks boutique",{awn:1});
-for(const f of [1,2,3])spec(f,"Canteen",345,430,125,118,"#e09f1f",489,"e","🍴","food lunch eat cafe coffee Block G");
+spec(1,"Market",345,460,125,58,"#e67e22",489,"e","🛒","shop groceries snacks boutique",{awn:1});
+for(const f of [1,2,3])spec(f,"Canteen",345,535,125,130,"#e09f1f",600,"e","🍴","food lunch eat cafe coffee Block F",{grp:"canteen"});
+for(const f of [1,2,3])add({f,name:"Barrel C",x:380,y:1058,w:84,h:84,c:"#d9822b",ic:"🎓",circle:1,kw:"lecture hall round barrel Block C",p:[[380,1100],[CX,1100]]});
 spec(3,"Men's Relax Room",345,215,110,60,"#6d5acf",245,"e","🛋","rest sleep Block H");
 spec(3,"Women's Relax Room",345,285,110,60,"#c0539b",315,"e","🛋","rest sleep Block H");
-spec(-1,"H Canteen",345,210,125,80,"#e09f1f",250,"e","🍴","food lunch eat level -1");
+spec(-1,"H Canteen",345,210,125,80,"#e09f1f",250,"e","🍴","food lunch eat level -1",{grp:"canteen"});
 ["H01","H02","H03"].forEach((n,i)=>spec(-1,n,345,298+i*20,125,18,"#2b5fa8",307+i*20,"e","","level -1"));
 /* block rooms: floors 1-3 = 10 west rooms, floor 4 = 5 rooms; H/I have 5 east rooms; D/E/F have one barrel */
 for(const f of [1,2,3,4])BLK.forEach(([L,top,c,fac])=>{
- for(let n=1;n<=(f==4?5:10);n++){const k=(n-1)%5,north=n>5,x=10+(4-k)*56,wy=top+80,cx=x+28,door=north?top+58:top+102;
+ for(let n=1;n<=(f==4?5:10);n++){const k=(n-1)%5,north=f==4||n>5,x=10+(4-k)*56,wy=top+80,cx=x+28,door=north?top+58:top+102;
   add({f,blk:L,name:L+f+String(n).padStart(2,"0"),x,y:north?top+12:top+102,w:56,h:46,c,kw:fac,cx,cy:top+(north?35:125),p:[[cx,door],[cx,wy],[CX,wy]]})}
  if(f<4&&"IH".includes(L)&&!(f==3&&L=="H"))for(let n=11;n<=15;n++){const y=top+10+(n-11)*28;add({f,name:L+f+n,x:345,y,w:70,h:26,c,kw:fac,p:[[345,y+13],[CX,y+13]]})}
- if(f<4&&"DEF".includes(L))add({f,name:"Barrel "+L,x:358,y:top+38,w:84,h:84,c:"#d9822b",ic:"🎓",circle:1,kw:"lecture hall round barrel",p:[[358,top+80],[CX,top+80]]});
+ if(f<4&&"DE".includes(L)){const two=L=="E",R=two?36:42;(two?[top+40,top+120]:[top+80]).forEach((cy,i)=>add({f,name:"Barrel "+L+(two?i+1:""),x:400-R,y:cy-R,w:2*R,h:2*R,c:"#d9822b",ic:"🎓",circle:1,kw:"lecture hall round barrel",p:[[400-R,cy],[CX,cy]]}))}
 });
 const ENTR=ROOMS.find(r=>r.name=="Main Entrance");
 let S={floor:1,from:ENTR,to:null,route:null};
@@ -120,5 +122,5 @@ bindSearch($("#from"),$("#sf"),setFrom);bindSearch($("#to"),$("#st"),setTo);
 $("#from").value="Main Entrance (floor 1)";
 const QUICK=["Library","Canteen","Market","Wi-Fi Zone","Red Hall","Student Service","SDU Store","Main Entrance","Men's Relax Room","Women's Relax Room","H Canteen","D110","F401"];
 $("#quick").innerHTML=$("#gq").innerHTML=QUICK.map(n=>`<button class="chip" data-n="${esc(n)}">${esc(n)}</button>`).join("");
-document.addEventListener("click",e=>{const c=e.target.closest("[data-n]");if(c)setTo(find(c.dataset.n)[0])});
+document.addEventListener("click",e=>{const c=e.target.closest("[data-n]");if(c)setTo(bestOf(find(c.dataset.n)[0]))});
 $("#swap").onclick=()=>{if(!S.to)return;[S.from,S.to]=[S.to,S.from];$("#from").value=S.from.name+" ("+fn(S.from.f)+")";$("#to").value=S.to.name+" ("+fn(S.to.f)+")";go()};
