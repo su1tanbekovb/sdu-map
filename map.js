@@ -5,7 +5,7 @@ const CX=315;
 const BLK=[["I",40,"#0e7490",""],["H",200,"#2b5fa8",""],["G",360,"#5a7d2e","Business School"],["F",520,"#2a3a8c","Engineering & Natural Sciences"],["E",680,"#8a2330","Education & Humanities"],["D",840,"#8a2a8a","Law & Social Sciences"]];
 const LIFTS=[...BLK.map(b=>({x:150,y:b[1]+80,blk:b[0]}))];
 const ROOMS=[];
-const ROOM_ALIAS={};[1,2,3].forEach(f=>Object.entries({"Barrel C":"C"+f+"17","Barrel D":"D"+f+"17","Barrel E":"E"+f+"17","Barrel E1":"E"+f+"17","Barrel E2":"E"+f+"19","Barrel F":"D"+f+"17"}).forEach(([o,n])=>ROOM_ALIAS[f+":"+o]=f+":"+n));   // old event places -> new rooms
+const ROOM_ALIAS={"3:Barrel E":"3:Barrel E1","3:Barrel F":"3:Barrel D"};[1,2].forEach(f=>Object.entries({"Barrel C":"C"+f+"17","Barrel D":"D"+f+"17","Barrel E":"E"+f+"17","Barrel E1":"E"+f+"17","Barrel E2":"E"+f+"19","Barrel F":"D"+f+"17"}).forEach(([o,n])=>ROOM_ALIAS[f+":"+o]=f+":"+n));   // old event places -> current rooms
 const add=o=>{o.id=o.f+":"+o.name;o.kw=(o.kw||"")+" "+o.name;if(o.cx==null){o.cx=o.x+o.w/2;o.cy=o.y+o.h/2}ROOMS.push(o)};
 const spec=(f,name,x,y,w,h,c,jy,side,ic,kw,ex)=>add({f,name,x,y,w,h,c,ic,kw,...ex,p:[[side=="w"?x+w:x,jy],[CX,jy]]});
 /* places (listed first so they show in default suggestions) */
@@ -16,11 +16,13 @@ add({f:1,name:"Main Entrance",x:400,y:1262,w:90,h:38,c:"#d62839",kw:"entrance ex
 spec(1,"Student Service",30,1010,80,120,"#2f7ed8",1070,"w","🗂","support documents certificates help Block D");
 spec(1,"SDU Store",30,1140,80,80,"#b83280",1180,"w","👕","clothes merch hoodie shop boutique",{awn:1});
 spec(1,"Market",345,528,125,52,"#e67e22",554,"e","🛒","shop groceries snacks boutique Block F",{awn:1});
-for(const f of [1,2,3])spec(f,"Canteen",345,586,125,82,"#e09f1f",627,"e","🍴","food lunch eat cafe coffee Block F",{grp:"canteen"});
-/* 4 barrels (round lecture halls), all the same size, in a zigzag starting from block C; each has 2 rooms (e.g. D117 + D118) */
+for(const f of [1,2,3])spec(f,"Canteen",345,f==1?586:528,125,f==1?82:140,"#e09f1f",f==1?627:598,"e","🍴","food lunch eat cafe coffee Block F",{grp:"canteen"});   // floors 2-3: no market, so the canteen is bigger
+/* 4 barrels (round lecture halls), all the same size, in a zigzag starting from block C.
+   Floors 1-2: each barrel has 2 rooms (e.g. D117 + D118). Floor 3: no rooms, only a roof where students can study. */
 const BR=[["C",1100,385,17],["D",920,440,17],["E",800,385,17],["E",720,440,19]];
-for(const f of [1,2,3])BR.forEach(([L,cy,cx,n])=>[0,1].forEach(h=>{const R=36,dx=Math.round(cx-Math.sqrt(R*R-14*14)),jy=cy+(h?14:-14);
- add({f,name:L+f+(n+h),barrel:L,half:h,bx:cx,by:cy,R,x:cx-R,y:cy-R,w:2*R,h:2*R,c:"#d9822b",kw:"barrel lecture hall round Block "+L,cx,cy:cy+(h?17:-15),p:[[dx,jy],[CX,jy]]})}));
+for(const f of [1,2])BR.forEach(([L,cy,cx,n])=>[0,1].forEach(h=>{const R=36,dx=Math.round(cx-Math.sqrt(R*R-14*14)),jy=cy+(h?14:-14);
+ add({f,name:L+f+(n+h),barrel:L,half:h,walk:h==0,bx:cx,by:cy,R,x:cx-R,y:cy-R,w:2*R,h:2*R,c:"#d9822b",kw:"barrel "+L+" lecture hall round Block "+L,cx,cy:cy+(h?17:-15),p:[[dx,jy],[CX,jy]]})}));
+BR.forEach(([L,cy,cx,n])=>add({f:3,name:"Barrel "+L+(L=="E"?(n==17?1:2):""),barrel:L,walk:1,bx:cx,by:cy,R:36,x:cx-36,y:cy-36,w:72,h:72,c:"#d9822b",ic:"📖",circle:1,kw:"barrel "+L+" roof study area Block "+L,p:[[cx-36,cy],[CX,cy]]}));
 spec(3,"Men's Relax Room",345,215,110,60,"#6d5acf",245,"e","🛋","rest sleep Block H");
 spec(3,"Women's Relax Room",345,285,110,60,"#c0539b",315,"e","🛋","rest sleep Block H");
 spec(-1,"H Canteen",345,210,125,80,"#e09f1f",250,"e","🍴","food lunch eat level -1",{grp:"canteen"});
@@ -51,7 +53,7 @@ function draw(){const f=S.floor,bl=f<0?BLK.filter(b=>b[0]=="H"):BLK;
  h+=`<g filter="url(#sh)" fill="#fff" stroke="#cdd3df"><rect x="290" y="${y0}" width="50" height="${y1-y0}"/>`;
  if(f>0&&f<4)h+=`<rect x="120" y="1000" width="320" height="240" rx="14"/>`;
  if(f==1)h+=`<rect x="10" y="1240" width="480" height="20"/>`;
- ROOMS.filter(r=>r.f==f&&r.half===0).forEach(r=>h+=`<rect x="338" y="${r.by-17}" width="${r.p[0][0]-336}" height="34"/>`);
+ ROOMS.filter(r=>r.f==f&&r.walk).forEach(r=>h+=`<rect x="338" y="${r.by-17}" width="${r.p[0][0]-336}" height="34"/>`);
  bl.forEach(([L,top])=>h+=`<rect x="10" y="${top+58}" width="280" height="44"/>`);
  h+=`</g>`;
  bl.forEach(([L,top,c,fac])=>h+=`<text x="75" y="${top+78}" font-size="10" font-weight="800" text-anchor="middle" fill="#6b7489">Block ${L}</text><text x="75" y="${top+90}" font-size="7.5" font-weight="700" text-anchor="middle" fill="#8590a6">${esc(fac)}</text>`);

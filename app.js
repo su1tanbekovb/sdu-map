@@ -5,12 +5,10 @@
 function showTab(t){document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t==t));document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.id=="p-"+t))}
 document.querySelector(".tabs").onclick=e=>{const b=e.target.closest("button");if(b)showTab(b.dataset.t)};
 const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),2600)};
-document.addEventListener("click",e=>{const t=e.target.closest("[data-tab]");if(t)showTab(t.dataset.tab)});
 
-let ST={me:null,people:[],events:[],going:[],counts:{},friends:[],incoming:[],outgoing:[]},events=[];
-const me=()=>ST.me,isAdmin=()=>!!ST.me&&ST.me.role=="admin";
+let ST={me:null,people:[],events:[],going:[],counts:{},friends:[],incoming:[],outgoing:[]},events=[],LASTERR="";
+const isAdmin=()=>!!ST.me&&ST.me.role=="admin";
 const subl=u=>u.faculty+" · "+(u.role=="admin"?"Staff":"Year "+u.year);
-let LASTERR="";
 async function refresh(){try{ST=await api.load();ST.events.forEach(v=>{v.room=ROOM_ALIAS[v.room]||v.room});LASTERR=""}catch(e){console.error(e);LASTERR=e.message||String(e);toast("Database error: "+LASTERR)}events=ST.events;renderAll()}
 const need=m=>{toast(m||"Log in first");openAuth("login")};
 const rn=id=>{const r=ROOMS.find(x=>x.id==id);return r?r.name+" · "+fn(r.f):"—"};
@@ -53,7 +51,7 @@ $("#evList").onclick=async e=>{const b=e.target.closest("button");if(!b)return;
  if(b.dataset.go){if(!ST.me)return need("Log in to join events");const id=isNaN(b.dataset.go)?b.dataset.go:+b.dataset.go,r=await api.toggleGoing(id,ST.going.includes(id),ST.me);if(r.error)toast(r.error);await refresh()}
  if(b.dataset.del){const id=isNaN(b.dataset.del)?b.dataset.del:+b.dataset.del,r=await api.deleteEvent(id);toast(r.error||"Event deleted");await refresh()}};
 
-/* ---------- Friends ---------- */
+/* ---------- Friends (people become friends only after the other person accepts) ---------- */
 const people=()=>ST.people.filter(p=>!ST.me||p.id!=ST.me.id);
 const fbtn=p=>{const id=p.id;
  if(ST.friends.includes(id))return`<button class="btn sm sec" data-fa="remove" data-id="${id}">Unfriend</button>`;
@@ -86,10 +84,11 @@ function renderProfile(){const u=ST.me,el=$("#p-profile");
  <textarea name="bio" rows="2" placeholder="About me">${esc(u.bio)}</textarea><div class="sw">${COLORS.map(c=>`<button type="button" data-color="${c}" class="${c==u.color?"on":""}" style="background:${c}" aria-label="Avatar colour"></button>`).join("")}</div><button class="btn">Save profile</button></form>
  ${admin?`<h3>People</h3>${ST.people.filter(p=>!p.seed).map(x=>`<div class="mini"><div><b>${esc(x.name)}</b> <span class="badge">${x.role}</span><small>${esc(x.email||"")}</small></div></div>`).join("")}`:""}
  <button class="btn sec" id="logout" style="margin-top:18px">Log out</button>`}
-$("#p-profile").onclick=async e=>{const u=ST.me;if(!u)return;const c=e.target.closest("[data-color]"),m=e.target.closest("[data-map]");
+$("#p-profile").onclick=async e=>{const u=ST.me;if(!u)return;const c=e.target.closest("[data-color]"),m=e.target.closest("[data-map]"),t=e.target.closest("[data-tab]");
  if(c){await api.updateProfile({color:c.dataset.color},u);await refresh()}
  if(e.target.closest("#logout")){await api.signOut();ST={...ST,me:null,people:[],going:[],friends:[],incoming:[],outgoing:[]};showTab("route");await refresh();toast("Logged out")}
- if(m)setTo(ROOMS.find(q=>q.id==m.dataset.map))};
+ if(m)setTo(ROOMS.find(q=>q.id==m.dataset.map));
+ if(t)showTab(t.dataset.tab)};
 $("#p-profile").onsubmit=async e=>{e.preventDefault();const u=ST.me,o=Object.fromEntries(new FormData(e.target));if(!u)return;
  const p={name:(o.name||"").trim()||u.name,faculty:o.faculty,bio:(o.bio||"").trim()};if(o.year)p.year=+o.year;
  const r=await api.updateProfile(p,u);toast(r.error||"Profile saved");await refresh()};
