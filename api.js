@@ -1,8 +1,3 @@
-/* =====================================================================
-   DATA LAYER. Two versions with the same functions:
-   - supaApi  = real shared database (Supabase)  -> used when config.js has keys
-   - localApi = demo mode, data stays in this browser
-   ===================================================================== */
 const FAC=["Engineering & Natural Sciences","Law & Social Sciences","Education & Humanities","Business School"];
 const COLORS=["#2f6bff","#1db93c","#f59e0b","#8b5cf6","#ec4899","#0ea5e9","#ef4444"];
 const cfg=window.SDU_CONFIG||{};
