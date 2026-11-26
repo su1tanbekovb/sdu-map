@@ -1,3 +1,8 @@
+/* =====================================================================
+   DATA LAYER. Two versions with the same functions:
+   - supaApi  = real shared database (Supabase)  -> used when config.js has keys
+   - localApi = demo mode, data stays in this browser
+   ===================================================================== */
 const FAC=["Engineering & Natural Sciences","Law & Social Sciences","Education & Humanities","Business School"];
 const COLORS=["#2f6bff","#1db93c","#f59e0b","#8b5cf6","#ec4899","#0ea5e9","#ef4444"];
 const cfg=window.SDU_CONFIG||{};
@@ -49,9 +54,9 @@ const supaApi=useDB?(()=>{
 /* ---------- Demo mode (this browser only) ---------- */
 const localApi=(()=>{
  const SEED=[["Aidana Nurlanova","Computer Science",2],["Timur Serikov","Business",3],["Dana Kassymova","Philology",1],["Arman Zhumabekov","Engineering",4],["Madina Omarova","Psychology",2],["Yerlan Bakhtiyarov","Computer Science",3],["Aliya Tolegen","International Relations",1]];
- const DEMO=[{id:1,t:"Open Day",d:"2026-11-20",tm:"11:00",room:"1:Barrel E1",desc:"Meet the faculties and tour the labs.",byName:"SDU Admin"},
+ const DEMO=[{id:1,t:"Open Day",d:"2026-11-20",tm:"11:00",room:"1:E117",desc:"Meet the faculties and tour the labs.",byName:"SDU Admin"},
   {id:2,t:"Career Fair",d:"2026-11-25",tm:"14:00",room:"1:Canteen",desc:"Companies from Almaty are hiring interns and graduates.",byName:"SDU Admin"},
-  {id:3,t:"Chess Tournament",d:"2026-12-02",tm:"16:30",room:"2:Barrel D",desc:"Open tournament for students of every year.",byName:"SDU Admin"}];
+  {id:3,t:"Chess Tournament",d:"2026-12-02",tm:"16:30",room:"2:D217",desc:"Open tournament for students of every year.",byName:"SDU Admin"}];
  let users=store.get("sdu4_users",[]),sid=store.get("sdu4_session",null),evs=store.get("sdu4_events",DEMO),reqs=store.get("sdu5_requests",[]);
  const ADMIN_CODES=["SDU-A1","SDU-A2","SDU-A3"];
  const saveU=()=>store.set("sdu4_users",users),saveE=()=>store.set("sdu4_events",evs),saveR=()=>store.set("sdu5_requests",reqs);

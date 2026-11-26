@@ -5,7 +5,7 @@ const CX=315;
 const BLK=[["I",40,"#0e7490",""],["H",200,"#2b5fa8",""],["G",360,"#5a7d2e","Business School"],["F",520,"#2a3a8c","Engineering & Natural Sciences"],["E",680,"#8a2330","Education & Humanities"],["D",840,"#8a2a8a","Law & Social Sciences"]];
 const LIFTS=[...BLK.map(b=>({x:150,y:b[1]+80,blk:b[0]}))];
 const ROOMS=[];
-const ROOM_ALIAS={"1:Barrel E":"1:Barrel E1","2:Barrel F":"2:Barrel D"};   // old event places -> new names
+const ROOM_ALIAS={};[1,2,3].forEach(f=>Object.entries({"Barrel C":"C"+f+"17","Barrel D":"D"+f+"17","Barrel E":"E"+f+"17","Barrel E1":"E"+f+"17","Barrel E2":"E"+f+"19","Barrel F":"D"+f+"17"}).forEach(([o,n])=>ROOM_ALIAS[f+":"+o]=f+":"+n));   // old event places -> new rooms
 const add=o=>{o.id=o.f+":"+o.name;o.kw=(o.kw||"")+" "+o.name;if(o.cx==null){o.cx=o.x+o.w/2;o.cy=o.y+o.h/2}ROOMS.push(o)};
 const spec=(f,name,x,y,w,h,c,jy,side,ic,kw,ex)=>add({f,name,x,y,w,h,c,ic,kw,...ex,p:[[side=="w"?x+w:x,jy],[CX,jy]]});
 /* places (listed first so they show in default suggestions) */
@@ -15,9 +15,12 @@ add({f:1,name:"Wi-Fi Zone",x:280,y:1263,w:110,h:110,circle:1,rings:1,c:"#6d4cc2"
 add({f:1,name:"Main Entrance",x:400,y:1262,w:90,h:38,c:"#d62839",kw:"entrance exit door start",p:[[445,1262],[445,1250],[CX,1250]]});
 spec(1,"Student Service",30,1010,80,120,"#2f7ed8",1070,"w","🗂","support documents certificates help Block D");
 spec(1,"SDU Store",30,1140,80,80,"#b83280",1180,"w","👕","clothes merch hoodie shop boutique",{awn:1});
-spec(1,"Market",345,460,125,58,"#e67e22",489,"e","🛒","shop groceries snacks boutique",{awn:1});
-for(const f of [1,2,3])spec(f,"Canteen",345,535,125,130,"#e09f1f",600,"e","🍴","food lunch eat cafe coffee Block F",{grp:"canteen"});
-for(const f of [1,2,3])add({f,name:"Barrel C",x:380,y:1058,w:84,h:84,c:"#d9822b",ic:"🎓",circle:1,kw:"lecture hall round barrel Block C",p:[[380,1100],[CX,1100]]});
+spec(1,"Market",345,528,125,52,"#e67e22",554,"e","🛒","shop groceries snacks boutique Block F",{awn:1});
+for(const f of [1,2,3])spec(f,"Canteen",345,586,125,82,"#e09f1f",627,"e","🍴","food lunch eat cafe coffee Block F",{grp:"canteen"});
+/* 4 barrels (round lecture halls), all the same size, in a zigzag starting from block C; each has 2 rooms (e.g. D117 + D118) */
+const BR=[["C",1100,385,17],["D",920,440,17],["E",800,385,17],["E",720,440,19]];
+for(const f of [1,2,3])BR.forEach(([L,cy,cx,n])=>[0,1].forEach(h=>{const R=36,dx=Math.round(cx-Math.sqrt(R*R-14*14)),jy=cy+(h?14:-14);
+ add({f,name:L+f+(n+h),barrel:L,half:h,bx:cx,by:cy,R,x:cx-R,y:cy-R,w:2*R,h:2*R,c:"#d9822b",kw:"barrel lecture hall round Block "+L,cx,cy:cy+(h?17:-15),p:[[dx,jy],[CX,jy]]})}));
 spec(3,"Men's Relax Room",345,215,110,60,"#6d5acf",245,"e","🛋","rest sleep Block H");
 spec(3,"Women's Relax Room",345,285,110,60,"#c0539b",315,"e","🛋","rest sleep Block H");
 spec(-1,"H Canteen",345,210,125,80,"#e09f1f",250,"e","🍴","food lunch eat level -1",{grp:"canteen"});
@@ -26,9 +29,8 @@ spec(-1,"H Canteen",345,210,125,80,"#e09f1f",250,"e","🍴","food lunch eat leve
 for(const f of [1,2,3,4])BLK.forEach(([L,top,c,fac])=>{
  for(let n=1;n<=(f==4?5:10);n++){const k=(n-1)%5,north=f==4||n>5,x=10+(4-k)*56,wy=top+80,cx=x+28,door=north?top+58:top+102;
   add({f,blk:L,name:L+f+String(n).padStart(2,"0"),x,y:north?top+12:top+102,w:56,h:46,c,kw:fac,cx,cy:top+(north?35:125),p:[[cx,door],[cx,wy],[CX,wy]]})}
- if(f<4&&"IH".includes(L)&&!(f==3&&L=="H"))for(let n=11;n<=15;n++){const y=top+10+(n-11)*28;add({f,name:L+f+n,x:345,y,w:70,h:26,c,kw:fac,p:[[345,y+13],[CX,y+13]]})}
- if(f<4&&"DE".includes(L)){const two=L=="E",R=two?36:42;(two?[top+40,top+120]:[top+80]).forEach((cy,i)=>add({f,name:"Barrel "+L+(two?i+1:""),x:400-R,y:cy-R,w:2*R,h:2*R,c:"#d9822b",ic:"🎓",circle:1,kw:"lecture hall round barrel",p:[[400-R,cy],[CX,cy]]}))}
-});
+ if(f<4&&"IHG".includes(L)&&!(f==3&&L=="H"))for(let n=11;n<=15;n++){const y=top+10+(n-11)*28;add({f,name:L+f+n,x:345,y,w:70,h:26,c,kw:fac,p:[[345,y+13],[CX,y+13]]})}
+ });
 const ENTR=ROOMS.find(r=>r.name=="Main Entrance");
 let S={floor:1,from:ENTR,to:null,route:null};
 /* ---------- Map ---------- */
@@ -49,13 +51,16 @@ function draw(){const f=S.floor,bl=f<0?BLK.filter(b=>b[0]=="H"):BLK;
  h+=`<g filter="url(#sh)" fill="#fff" stroke="#cdd3df"><rect x="290" y="${y0}" width="50" height="${y1-y0}"/>`;
  if(f>0&&f<4)h+=`<rect x="120" y="1000" width="320" height="240" rx="14"/>`;
  if(f==1)h+=`<rect x="10" y="1240" width="480" height="20"/>`;
+ ROOMS.filter(r=>r.f==f&&r.half===0).forEach(r=>h+=`<rect x="338" y="${r.by-17}" width="${r.p[0][0]-336}" height="34"/>`);
  bl.forEach(([L,top])=>h+=`<rect x="10" y="${top+58}" width="280" height="44"/>`);
  h+=`</g>`;
  bl.forEach(([L,top,c,fac])=>h+=`<text x="75" y="${top+78}" font-size="10" font-weight="800" text-anchor="middle" fill="#6b7489">Block ${L}</text><text x="75" y="${top+90}" font-size="7.5" font-weight="700" text-anchor="middle" fill="#8590a6">${esc(fac)}</text>`);
  if(f>0&&f<4)h+=`<text x="280" y="1232" font-size="9.5" font-weight="700" text-anchor="middle" fill="#7a8397">Block C · Lobby</text>`;
  h+=`<g font-size="10.5" font-weight="800" text-anchor="middle">`;
  ROOMS.filter(r=>r.f==f).forEach(r=>{const t=r===S.to?"#1db93c":r===S.from?"#2f6bff":null,sw=t?3:1.3,fo=t?.45:.17;
-  let sh;if(r.circle){const R=r.w/2;sh=`<circle cx="${r.cx}" cy="${r.cy}" r="${R}" fill="#fff"/><circle cx="${r.cx}" cy="${r.cy}" r="${R}" fill="${t||r.c}" fill-opacity="${fo}" stroke="${r.c}" stroke-width="${sw}"/>`;
+  let sh;if(r.half!=null){const R=r.R,d=r.half==0?`M${r.bx-R},${r.by}A${R},${R} 0 0 1 ${r.bx+R},${r.by}Z`:`M${r.bx+R},${r.by}A${R},${R} 0 0 1 ${r.bx-R},${r.by}Z`;
+   sh=`<path d="${d}" fill="#fff"/><path d="${d}" fill="${t||r.c}" fill-opacity="${fo}" stroke="${r.c}" stroke-width="${sw}"/>`}
+  else if(r.circle){const R=r.w/2;sh=`<circle cx="${r.cx}" cy="${r.cy}" r="${R}" fill="#fff"/><circle cx="${r.cx}" cy="${r.cy}" r="${R}" fill="${t||r.c}" fill-opacity="${fo}" stroke="${r.c}" stroke-width="${sw}"/>`;
    if(r.rings)sh+=`<circle cx="${r.cx}" cy="${r.cy}" r="${R*.7}" fill="none" stroke="${r.c}" stroke-opacity=".4" stroke-dasharray="3 3"/><circle cx="${r.cx}" cy="${r.cy}" r="${R*.4}" fill="none" stroke="${r.c}" stroke-opacity=".4" stroke-dasharray="3 3"/>`}
   else{const rx=r.awn?4:7;sh=`<rect x="${r.x+1}" y="${r.y+1}" width="${r.w-2}" height="${r.h-2}" rx="${rx}" fill="#fff"/><rect x="${r.x+1}" y="${r.y+1}" width="${r.w-2}" height="${r.h-2}" rx="${rx}" fill="${t||r.c}" fill-opacity="${fo}" stroke="${r.c}" stroke-width="${sw}"/>`;
    if(r.awn)sh+=Array.from({length:8},(_,i)=>`<rect x="${r.x+1+i*(r.w-2)/8}" y="${r.y+1}" width="${(r.w-2)/8}" height="11" fill="${i%2?"#fff":r.c}"/>`).join("")}
