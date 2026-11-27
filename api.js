@@ -19,7 +19,6 @@ const supaApi=useDB?(()=>{
    const{data,error}=await sb.auth.signUp({email:o.email,password:o.pw,options:{data:{name:o.name,faculty:o.faculty,year:o.year}}});
    if(error)return{error:error.message};
    if(!data.session)return{info:"Check your email and click the confirmation link, then log in."};
-   if(o.role=="admin"){const r=await sb.rpc("claim_admin",{code:o.code});if(r.error)return{error:r.error.message};if(!r.data)return{error:"Wrong admin code. Your account was created as a member."}}
    return{}},
   async signIn(email,pw){return fail(await sb.auth.signInWithPassword({email,password:pw}))},
   async signOut(){try{await sb.auth.signOut({scope:"local"})}catch(e){console.error(e)}},
@@ -58,7 +57,6 @@ const localApi=(()=>{
   {id:2,t:"Career Fair",d:"2026-11-25",tm:"14:00",room:"1:Canteen",desc:"Companies from Almaty are hiring interns and graduates.",byName:"SDU Admin"},
   {id:3,t:"Chess Tournament",d:"2026-12-02",tm:"16:30",room:"2:D217",desc:"Open tournament for students of every year.",byName:"SDU Admin"}];
  let users=store.get("sdu4_users",[]),sid=store.get("sdu4_session",null),evs=store.get("sdu4_events",DEMO),reqs=store.get("sdu5_requests",[]);
- const ADMIN_CODES=["SDU-A1","SDU-A2","SDU-A3"];
  const saveU=()=>store.set("sdu4_users",users),saveE=()=>store.set("sdu4_events",evs),saveR=()=>store.set("sdu5_requests",reqs);
  const cur=()=>users.find(u=>u.id==sid)||null,adm=()=>{const u=cur();return !!u&&u.role=="admin"};
  const pub=u=>({id:u.id,name:u.name,email:u.email,role:u.role,faculty:u.faculty,year:u.year,bio:u.bio,color:u.color});
@@ -72,8 +70,7 @@ const localApi=(()=>{
    await fixPw("admin@sdu.edu.kz","admin123");await fixPw("student@sdu.edu.kz","student123")},
   async signUp(o){
    if(users.some(u=>u.email==o.email))return{error:"This email is already registered. Log in instead."};
-   if(o.role=="admin"&&!ADMIN_CODES.includes(o.code))return{error:"Wrong admin code."};
-   sid=(await mk(o)).id;store.set("sdu4_session",sid);return{}},
+   sid=(await mk({...o,role:"member"})).id;store.set("sdu4_session",sid);return{}},
   async signIn(email,pw){const u=users.find(x=>x.email==email.trim().toLowerCase());if(!u||!u.hash||u.hash!=await hashPw(pw,u.salt))return{error:"Wrong email or password."};sid=u.id;store.set("sdu4_session",sid);return{}},
   async signOut(){sid=null;store.set("sdu4_session",null)},
   async load(){const u=cur(),counts={};users.forEach(x=>(x.going||[]).forEach(i=>counts[i]=(counts[i]||0)+1));

@@ -20,16 +20,14 @@ function openAuth(m){setAuth(m||"login");dlg.showModal()}
 function setAuth(m){$("#loginF").hidden=m!="login";$("#regF").hidden=m!="reg";document.querySelectorAll(".atab button").forEach(b=>b.classList.toggle("on",b.dataset.m==m));$("#aerr").textContent=""}
 document.querySelector(".atab").onclick=e=>{const b=e.target.closest("button");if(b)setAuth(b.dataset.m)};
 $("#dx").onclick=()=>dlg.close();
-$("#rrole").onchange=e=>$("#rcode").hidden=e.target.value!="admin";
 document.addEventListener("click",e=>{const a=e.target.closest("[data-auth]");if(a)openAuth(a.dataset.auth)});
 $("#loginF").onsubmit=async e=>{e.preventDefault();const r=await api.signIn($("#lemail").value,$("#lpw").value);if(r.error){$("#aerr").textContent=r.error;return}
  $("#lpw").value="";await refresh();if(!ST.me){$("#aerr").textContent=LASTERR||"Logged in, but the profile could not be loaded.";return}dlg.close();toast("Welcome back, "+ST.me.name)};
 $("#regF").onsubmit=async e=>{e.preventDefault();
- const o={name:$("#rname").value.trim(),email:$("#remail").value.trim().toLowerCase(),pw:$("#rpw").value,faculty:$("#rfac").value,year:+$("#ryear").value,role:$("#rrole").value,code:$("#rcode").value.trim()},er=$("#aerr");
+ const o={name:$("#rname").value.trim(),email:$("#remail").value.trim().toLowerCase(),pw:$("#rpw").value,faculty:$("#rfac").value,year:+$("#ryear").value},er=$("#aerr");
  if(o.name.length<2){er.textContent="Enter your full name.";return}
  if(!/^\S+@\S+\.\S+$/.test(o.email)){er.textContent="Enter a valid email address.";return}
  if(o.pw.length<6){er.textContent="Password needs at least 6 characters.";return}
- if(o.role=="admin"&&!o.code){er.textContent="Enter your personal admin code.";return}
  const r=await api.signUp(o);await refresh();
  if(!ST.me){er.textContent=LASTERR||r.error||r.info||"Could not sign up.";return}
  dlg.close();showTab("profile");toast(r.error||"Account created. Welcome, "+ST.me.name)};
@@ -96,6 +94,6 @@ function renderAll(){renderUser();renderEvents();renderFriends();renderProfile()
 
 /* ---------- Start ---------- */
 addEventListener("resize",fitAll);
-document.querySelector(".hint").innerHTML=api.mode=="supabase"?"Log in with your email and password. To sign up as an admin you need your personal admin code from the site owner. Logging in never asks for it.":"Demo accounts — admin: admin@sdu.edu.kz / admin123 · student: student@sdu.edu.kz / student123. Demo admin codes: SDU-A1, SDU-A2, SDU-A3.";
+document.querySelector(".hint").innerHTML=api.mode=="supabase"?"Log in with your email and password. Admins are chosen by the site owner in the database.":"Demo accounts — admin: admin@sdu.edu.kz / admin123 · student: student@sdu.edu.kz / student123. In demo mode only the demo admin can create events.";
 draw();fitAll();renderAll();
 api.init().then(refresh);
