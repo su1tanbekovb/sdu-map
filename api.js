@@ -30,16 +30,17 @@ const supaApi=useDB?(()=>{
    const rows=chk("event_attendees",at),counts={};rows.forEach(a=>counts[a.event_id]=(counts[a.event_id]||0)+1);
    let people=[],me=null,friends=[],incoming=[],outgoing=[];
    if(uid){
-    const[pr,ro,fr]=await Promise.all([sb.from("profiles").select("*"),sb.from("user_roles").select("*"),sb.from("friend_requests").select("*")]);
+    const[pr,ro,fr]=await Promise.all([sb.from("profiles").select("id,name,faculty,year,bio,color"),sb.from("user_roles").select("*"),sb.from("friend_requests").select("*")]);
     const role=Object.fromEntries(chk("user_roles",ro).map(r=>[r.user_id,r.role]));
-    people=chk("profiles",pr).map(p=>({id:p.id,name:p.name,email:p.email,faculty:p.faculty||"",year:p.year||1,bio:p.bio||"",color:p.color,role:role[p.id]||"member"}));
+    people=chk("profiles",pr).map(p=>({id:p.id,name:p.name,email:"",faculty:p.faculty||"",year:p.year||1,bio:p.bio||"",color:p.color,role:role[p.id]||"member"}));
     const fq=chk("friend_requests",fr);
     friends=fq.filter(r=>r.status=="accepted").map(r=>r.sender_id==uid?r.receiver_id:r.sender_id);
     incoming=fq.filter(r=>r.status=="pending"&&r.receiver_id==uid).map(r=>r.sender_id);
     outgoing=fq.filter(r=>r.status=="pending"&&r.sender_id==uid).map(r=>r.receiver_id);
-    me=people.find(p=>p.id==uid)||null;
+    if(role[uid]=="admin"){const ap=await sb.rpc("admin_people");(ap.data||[]).forEach(x=>{const p=people.find(q=>q.id==x.id);if(p)p.email=x.email})}
+    me=people.find(p=>p.id==uid)||null;if(me)me.email=session.user.email;
     if(!me){const m=session.user.user_metadata||{};me={id:uid,name:m.name||"Student",email:session.user.email,faculty:m.faculty||"",year:+m.year||1,bio:"",color:COLORS[0],role:role[uid]||"member"};people.push(me)}}
-   return{me,people,events,going:rows.filter(a=>a.user_id==uid).map(a=>a.event_id),counts,friends,incoming,outgoing}},
+   return{me,people,events,going:rows.filter(a=>a.user_id==uid).map(a=>a.event_id),counts,friends,incoming,outgoing,attend:rows}},
   async createEvent(o,me){return fail(await sb.from("events").insert({title:o.t.trim(),event_date:o.d,event_time:o.tm,room:o.room,description:(o.desc||"").trim(),created_by_name:me.name}))},
   async deleteEvent(id){return fail(await sb.from("events").delete().eq("id",id))},
   async toggleGoing(id,isGoing,me){return fail(isGoing?await sb.from("event_attendees").delete().eq("event_id",id).eq("user_id",me.id):await sb.from("event_attendees").insert({event_id:id,user_id:me.id}))},
@@ -74,7 +75,7 @@ const localApi=(()=>{
   async signIn(email,pw){const u=users.find(x=>x.email==email.trim().toLowerCase());if(!u||!u.hash||u.hash!=await hashPw(pw,u.salt))return{error:"Wrong email or password."};sid=u.id;store.set("sdu4_session",sid);return{}},
   async signOut(){sid=null;store.set("sdu4_session",null)},
   async load(){const u=cur(),counts={};users.forEach(x=>(x.going||[]).forEach(i=>counts[i]=(counts[i]||0)+1));
-   return{me:u?pub(u):null,events:evs,counts,going:u?u.going||[]:[],
+   return{me:u?pub(u):null,events:evs,counts,attend:users.flatMap(x=>(x.going||[]).map(i=>({event_id:i,user_id:x.id}))),going:u?u.going||[]:[],
     friends:u?reqs.filter(r=>r.status=="accepted"&&(r.from==u.id||r.to==u.id)).map(r=>r.from==u.id?r.to:r.from):[],
     incoming:u?reqs.filter(r=>r.status=="pending"&&r.to==u.id).map(r=>r.from):[],outgoing:u?reqs.filter(r=>r.status=="pending"&&r.from==u.id).map(r=>r.to):[],
     people:[...SEED.map((p,i)=>({id:"s"+i,name:p[0],faculty:p[1],year:p[2],role:"member",color:COLORS[i%7],bio:"",email:"",seed:true})),...users.map(pub)]}},

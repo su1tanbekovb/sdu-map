@@ -41,7 +41,7 @@
   <li><b>Library</b> is in Block B. The <b>Red Hall</b> is to its left, the round <b>Wi-Fi Zone</b> to its right.</li>
   <li><b>Relax rooms</b> (men’s and women’s) are in Block H on floor 3.</li></ul>
   <h3>Accounts</h3>
-  <p>Sign up or log in with email and password (top right). <b>Members</b> (students) browse the map, join events, add friends and edit their profile. <b>Admins</b> can also create and delete events. Admins are chosen only by the site owner, in the database.</p>
+  <p>Sign up or log in with email and password (top right). <b>Members</b> (students) browse the map, join events, add friends (the other person must accept), see each other’s profiles (e-mails stay private) and edit their own profile. <b>Admins</b> can also create and delete events. Admins are chosen only by the site owner, in the database.</p>
   <h3>Popular places</h3><div class="row" id="gq"></div>
  </section>
 </aside>
@@ -61,12 +61,13 @@
   <select id="ryear"><option value="1">Year 1</option><option value="2">Year 2</option><option value="3">Year 3</option><option value="4">Year 4</option></select><button class="btn">Create account</button></form>
  <p id="aerr" role="alert"></p>
  <small class="hint"></small></dialog>
+<dialog id="udlg"><button class="x" id="udx" aria-label="Close">×</button><div id="ubody"></div></dialog>
 <div id="toast"></div>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="map.js"></script>
-<script src="api.js"></script>
-<script src="app.js"></script>
-<script src="assistant.js"></script>
+<script src="js/map.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script src="js/assistant.js"></script>
 </body>
 </html>
