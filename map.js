@@ -6,7 +6,7 @@ const BLK=[["I",40,"#0e7490",""],["H",200,"#2b5fa8",""],["G",360,"#5a7d2e","Busi
 const LIFTS=[...BLK.map(b=>({x:150,y:b[1]+80,blk:b[0]}))];
 const ROOMS=[];
 const ROOM_ALIAS={"3:Barrel E1":"3:Barrel E","3:Barrel E2":"3:Barrel E","3:Barrel F":"3:Barrel D1","3:Barrel D":"3:Barrel D1"};   // old event places -> current rooms
-[1,2,3].forEach(f=>[13,14,15].forEach(n=>ROOM_ALIAS[f+":G"+f+n]=f+":Mini Red Hall"));
+[13,14,15].forEach(n=>ROOM_ALIAS["1:G1"+n]="1:Mini Red Hall");
 [1,2].forEach(f=>{["C","D","E"].forEach(L=>ROOM_ALIAS[f+":Barrel "+L]=f+":"+L+f+"17");ROOM_ALIAS[f+":Barrel E1"]=f+":E"+f+"17";ROOM_ALIAS[f+":Barrel E2"]=f+":E"+f+"17";ROOM_ALIAS[f+":Barrel F"]=f+":D"+f+"17";["18","19","20"].forEach(n=>ROOM_ALIAS[f+":E"+f+n]=f+":E"+f+"17");ROOM_ALIAS[f+":C"+f+"18"]=f+":C"+f+"17"});
 const add=o=>{o.id=o.f+":"+o.name;o.kw=(o.kw||"")+" "+o.name;if(o.cx==null){o.cx=o.x+o.w/2;o.cy=o.y+o.h/2}ROOMS.push(o)};
 const spec=(f,name,x,y,w,h,c,jy,side,ic,kw,ex)=>add({f,name,x,y,w,h,c,ic,kw,...ex,p:[[side=="w"?x+w:x,jy],[CX,jy]]});
@@ -24,10 +24,10 @@ for(const f of [1,2,3])spec(f,"Canteen",345,f==1?586:528,125,f==1?82:140,"#e09f1
 const BR=[["C",1100,385,17],["D",960,440,17],["D",870,385,18],["E",760,440,17]];
 for(const f of [1,2])BR.forEach(([L,cy,cx,n])=>add({f,name:L+f+n,barrel:L,walk:1,bx:cx,by:cy,R:36,x:cx-36,y:cy-36,w:72,h:72,c:"#d9822b",circle:1,kw:"barrel "+L+" lecture hall round Block "+L,p:[[cx-36,cy],[CX,cy]]}));
 BR.forEach(([L,cy,cx,n])=>add({f:3,name:"Barrel "+L+(L=="D"?(n==17?1:2):""),barrel:L,walk:1,bx:cx,by:cy,R:36,x:cx-36,y:cy-36,w:72,h:72,c:"#d9822b",ic:"📖",circle:1,kw:"barrel "+L+" roof study area Block "+L,p:[[cx-36,cy],[CX,cy]]}));
-/* block G: the east rooms 113-115 are replaced by a small Red Hall */
-for(const f of [1,2,3])spec(f,"Mini Red Hall",345,426,70,82,"#c0392b",467,"e","🎭","hall events mini red Block G");
-/* level -1: every block has one room 01 (Block H has H01-H03 on its east side) */
-BLK.forEach(([L,top,c,fac])=>{if(L!="H")add({f:-1,blk:L,name:L+"01",x:234,y:top+102,w:56,h:46,c,kw:fac,cx:262,cy:top+125,p:[[262,top+102],[262,top+80],[CX,top+80]]})});
+/* block G, floor 1 only: the east rooms 113-115 are replaced by a small Red Hall */
+spec(1,"Mini Red Hall",345,426,70,82,"#c0392b",467,"e","🎭","hall events mini red Block G");
+/* level -1: every block has one room 01 (top row, far left; Block H has H01-H03 on its east side) */
+BLK.forEach(([L,top,c,fac])=>{if(L!="H")add({f:-1,blk:L,name:L+"01",x:10,y:top+12,w:56,h:46,c,kw:fac,cx:38,cy:top+35,p:[[38,top+58],[38,top+80],[CX,top+80]]})});
 spec(3,"Men's Relax Room",345,215,110,60,"#6d5acf",245,"e","🛋","rest sleep Block H");
 spec(3,"Women's Relax Room",345,285,110,60,"#c0539b",315,"e","🛋","rest sleep Block H");
 spec(-1,"H Canteen",345,210,125,80,"#e09f1f",250,"e","🍴","food lunch eat level -1",{grp:"canteen"});
@@ -36,7 +36,7 @@ spec(-1,"H Canteen",345,210,125,80,"#e09f1f",250,"e","🍴","food lunch eat leve
 for(const f of [1,2,3,4])BLK.forEach(([L,top,c,fac])=>{
  for(let n=1;n<=(f==4?5:10);n++){const k=(n-1)%5,north=f==4||n>5,x=10+(4-k)*56,wy=top+80,cx=x+28,door=north?top+58:top+102;
   add({f,blk:L,name:L+f+String(n).padStart(2,"0"),x,y:north?top+12:top+102,w:56,h:46,c,kw:fac,cx,cy:top+(north?35:125),p:[[cx,door],[cx,wy],[CX,wy]]})}
- if(f<4&&"IHG".includes(L)&&!(f==3&&L=="H"))for(let n=11;n<=(L=="G"?12:15);n++){const y=top+10+(n-11)*28;add({f,name:L+f+n,x:345,y,w:70,h:26,c,kw:fac,p:[[345,y+13],[CX,y+13]]})}
+ if(f<4&&"IHG".includes(L)&&!(f==3&&L=="H"))for(let n=11;n<=(L=="G"&&f==1?12:15);n++){const y=top+10+(n-11)*28;add({f,name:L+f+n,x:345,y,w:70,h:26,c,kw:fac,p:[[345,y+13],[CX,y+13]]})}
  });
 const ENTR=ROOMS.find(r=>r.name=="Main Entrance");
 let S={floor:1,from:ENTR,to:null,route:null};
